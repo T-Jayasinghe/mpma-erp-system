@@ -32,6 +32,9 @@ const getPublicCourses = (req, res) => __awaiter(void 0, void 0, void 0, functio
                 'registrationFee',
                 'courseFee',
                 'status',
+                'schedule',
+                'type',
+                'mode',
             ],
             order: [['courseName', 'ASC']],
         });
@@ -68,6 +71,9 @@ const getPublicCourseById = (req, res) => __awaiter(void 0, void 0, void 0, func
                 'registrationFee',
                 'courseFee',
                 'status',
+                'schedule',
+                'type',
+                'mode',
             ],
         });
         if (!course) {

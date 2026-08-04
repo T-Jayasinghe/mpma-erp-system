@@ -25,6 +25,9 @@ export const getPublicCourses = async (
         'registrationFee',
         'courseFee',
         'status',
+        'schedule',
+        'type',
+        'mode',
       ],
       order: [['courseName', 'ASC']],
     });
@@ -66,6 +69,9 @@ export const getPublicCourseById = async (
         'registrationFee',
         'courseFee',
         'status',
+        'schedule',
+        'type',
+        'mode',
       ],
     });
 

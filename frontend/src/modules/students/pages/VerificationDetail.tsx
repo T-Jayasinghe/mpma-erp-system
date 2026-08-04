@@ -22,6 +22,7 @@ import {
   Ban,
   Eye,
   Download,
+  Award,
 } from "lucide-react";
 import { BASE_URL, fetchApi } from "../../../utils/api";
 
@@ -282,6 +283,172 @@ export default function VerificationDetail() {
                 <InfoRow icon={<MapPin className="w-4 h-4" />} label="Address" value={student.address} className="sm:col-span-2" />
               </div>
             </div>
+
+            {/* Educational Qualifications Card */}
+            {(() => {
+              let qualData: any = null;
+              const rawNotes = student.admin_notes || (student as any).qualificationsData || (student as any).qualifications;
+              if (rawNotes) {
+                try {
+                  qualData = typeof rawNotes === 'string' ? JSON.parse(rawNotes) : rawNotes;
+                  if (typeof qualData === 'string') {
+                    qualData = JSON.parse(qualData);
+                  }
+                } catch {
+                  qualData = null;
+                }
+              }
+
+              const ol = qualData?.ol;
+              const al = qualData?.al;
+              const other = qualData?.otherQualifications || [];
+              const hasOL = ol && (ol.year || ol.indexNumber || (ol.subjects && ol.subjects.length > 0));
+              const hasAL = al && (al.year || al.indexNumber || al.zScore || (al.subjects && al.subjects.length > 0));
+              const hasOther = Array.isArray(other) && other.length > 0;
+              const hasAnyQual = hasOL || hasAL || hasOther;
+
+              return (
+                <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden space-y-4">
+                  <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Award className="w-5 h-5 text-amber-500" />
+                      <h2 className="font-bold text-slate-800">Educational Qualifications & Exam Results</h2>
+                    </div>
+                    {hasAnyQual && (
+                      <span className="px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 text-xs font-bold border border-emerald-200">
+                        Provided
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="p-6 space-y-5">
+                    {!hasAnyQual ? (
+                      <div className="py-6 text-center text-slate-400 text-sm font-medium bg-slate-50/50 rounded-2xl border border-dashed border-slate-200">
+                        <Award className="w-8 h-8 text-slate-300 mx-auto mb-2" />
+                        <p>No educational qualifications or exam results recorded for this application.</p>
+                      </div>
+                    ) : (
+                      <>
+                        {/* O/L Section */}
+                        {hasOL && (
+                          <div className="bg-slate-50/80 rounded-2xl p-5 border border-slate-200/70 space-y-3">
+                            <div className="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-slate-200/70">
+                              <span className="font-bold text-slate-800 text-xs flex items-center gap-2">
+                                <span className="w-2 h-2 rounded-full bg-blue-600"></span>
+                                G.C.E. Ordinary Level (O/L)
+                              </span>
+                              <div className="flex items-center gap-3 text-xs text-slate-500 font-semibold">
+                                {ol.year && <span>Year: <strong className="text-slate-800">{ol.year}</strong></span>}
+                                {ol.indexNumber && <span>Index: <strong className="text-slate-800">{ol.indexNumber}</strong></span>}
+                                {ol.medium && <span>Medium: <strong className="text-slate-800">{ol.medium}</strong></span>}
+                              </div>
+                            </div>
+
+                            {ol.subjects && ol.subjects.length > 0 ? (
+                              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
+                                {ol.subjects.map((sub: any, idx: number) => (
+                                  <div key={idx} className="bg-white px-3 py-2 rounded-xl border border-slate-200 flex items-center justify-between text-xs shadow-2xs">
+                                    <span className="font-semibold text-slate-700 truncate pr-2">{sub.subject}</span>
+                                    <span className={`px-2 py-0.5 rounded font-black text-xs shrink-0 ${
+                                      sub.grade === 'A' ? 'bg-emerald-100 text-emerald-800' :
+                                      sub.grade === 'B' ? 'bg-blue-100 text-blue-800' :
+                                      sub.grade === 'C' ? 'bg-amber-100 text-amber-800' :
+                                      sub.grade === 'S' ? 'bg-violet-100 text-violet-800' :
+                                      'bg-rose-100 text-rose-800'
+                                    }`}>
+                                      {sub.grade}
+                                    </span>
+                                  </div>
+                                ))}
+                              </div>
+                            ) : (
+                              <p className="text-xs text-slate-400 italic">No O/L subject grades listed.</p>
+                            )}
+                          </div>
+                        )}
+
+                        {/* A/L Section */}
+                        {hasAL && (
+                          <div className="bg-slate-50/80 rounded-2xl p-5 border border-slate-200/70 space-y-3">
+                            <div className="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-slate-200/70">
+                              <span className="font-bold text-slate-800 text-xs flex items-center gap-2">
+                                <span className="w-2 h-2 rounded-full bg-indigo-600"></span>
+                                G.C.E. Advanced Level (A/L) — {al.stream || 'Stream'}
+                              </span>
+                              <div className="flex items-center gap-3 text-xs text-slate-500 font-semibold">
+                                {al.year && <span>Year: <strong className="text-slate-800">{al.year}</strong></span>}
+                                {al.indexNumber && <span>Index: <strong className="text-slate-800">{al.indexNumber}</strong></span>}
+                                {al.zScore && <span>Z-Score: <strong className="text-slate-800">{al.zScore}</strong></span>}
+                              </div>
+                            </div>
+
+                            {al.subjects && al.subjects.length > 0 ? (
+                              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
+                                {al.subjects.map((sub: any, idx: number) => (
+                                  <div key={idx} className="bg-white px-3 py-2 rounded-xl border border-slate-200 flex items-center justify-between text-xs shadow-2xs">
+                                    <span className="font-semibold text-slate-700 truncate pr-2">{sub.subject}</span>
+                                    <span className={`px-2 py-0.5 rounded font-black text-xs shrink-0 ${
+                                      sub.grade === 'A' ? 'bg-emerald-100 text-emerald-800' :
+                                      sub.grade === 'B' ? 'bg-blue-100 text-blue-800' :
+                                      sub.grade === 'C' ? 'bg-amber-100 text-amber-800' :
+                                      sub.grade === 'S' ? 'bg-violet-100 text-violet-800' :
+                                      'bg-rose-100 text-rose-800'
+                                    }`}>
+                                      {sub.grade}
+                                    </span>
+                                  </div>
+                                ))}
+                              </div>
+                            ) : (
+                              <p className="text-xs text-slate-400 italic">No A/L subject grades listed.</p>
+                            )}
+                          </div>
+                        )}
+
+                        {/* Other Qualifications Section */}
+                        {hasOther && (
+                          <div className="bg-slate-50/80 rounded-2xl p-5 border border-slate-200/70 space-y-3">
+                            <div className="pb-2 border-b border-slate-200/70">
+                              <span className="font-bold text-slate-800 text-xs flex items-center gap-2">
+                                <span className="w-2 h-2 rounded-full bg-emerald-600"></span>
+                                Higher Education & Other Qualifications
+                              </span>
+                            </div>
+
+                            <div className="overflow-x-auto">
+                              <table className="w-full text-left text-xs bg-white rounded-xl border border-slate-200 overflow-hidden">
+                                <thead className="bg-slate-100/70 font-bold text-slate-700 uppercase">
+                                  <tr>
+                                    <th className="py-2.5 px-3">Qualification Title</th>
+                                    <th className="py-2.5 px-3">Institute / University</th>
+                                    <th className="py-2.5 px-3 text-center">Year</th>
+                                    <th className="py-2.5 px-3 text-center">Result</th>
+                                  </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-100">
+                                  {other.map((q: any, idx: number) => (
+                                    <tr key={idx}>
+                                      <td className="py-2 px-3 font-bold text-slate-800">{q.title}</td>
+                                      <td className="py-2 px-3 text-slate-600">{q.institute}</td>
+                                      <td className="py-2 px-3 text-center text-slate-700 font-medium">{q.year}</td>
+                                      <td className="py-2 px-3 text-center">
+                                        <span className="px-2 py-0.5 rounded font-bold text-xs bg-slate-100 text-slate-800 inline-block border border-slate-200">
+                                          {q.result}
+                                        </span>
+                                      </td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            </div>
+                          </div>
+                        )}
+                      </>
+                    )}
+                  </div>
+                </div>
+              );
+            })()}
 
             {/* Documents */}
             <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">

@@ -603,6 +603,7 @@ const updateApplicationStudent = (req, res) => __awaiter(void 0, void 0, void 0,
             'studentCategory',
             'nic',
             'passport',
+            'admin_notes',
         ];
         const updates = {};
         for (const field of allowedFields) {
@@ -615,6 +616,11 @@ const updateApplicationStudent = (req, res) => __awaiter(void 0, void 0, void 0,
         }
         if (req.body.passportNumber !== undefined && updates.passport === undefined) {
             updates.passport = req.body.passportNumber;
+        }
+        if (req.body.qualificationsData !== undefined && updates.admin_notes === undefined) {
+            updates.admin_notes = typeof req.body.qualificationsData === 'object'
+                ? JSON.stringify(req.body.qualificationsData)
+                : req.body.qualificationsData;
         }
         // Validate email uniqueness
         if (updates.email && updates.email !== student.email) {

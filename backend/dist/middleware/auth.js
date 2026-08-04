@@ -13,14 +13,16 @@ const protect = (req, res, next) => {
             token = req.headers.authorization.split(' ')[1];
             const decoded = jsonwebtoken_1.default.verify(token, JWT_SECRET);
             req.user = decoded;
-            next();
+            return next();
         }
         catch (error) {
             res.status(401).json({ message: 'Not authorized, token failed' });
+            return;
         }
     }
     if (!token) {
         res.status(401).json({ message: 'Not authorized, no token' });
+        return;
     }
 };
 exports.protect = protect;

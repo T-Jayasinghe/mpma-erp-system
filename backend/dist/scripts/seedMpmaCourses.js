@@ -43,7 +43,7 @@ const mpmaCourses = [
         stream: 'Management & IS',
         description: 'Leadership, maritime administration, business management, and information systems training for modern maritime professionals.',
     },
-].map((course) => (Object.assign(Object.assign({}, course), { duration: '6 Months', medium: 'English', location: 'MPMA Campus', maxParticipants: 40, registrationFee: 0, courseFee: 0, status: 'Active' })));
+].map((course) => (Object.assign(Object.assign({}, course), { duration: '6 Months', medium: 'English', location: 'MPMA Campus', maxParticipants: 40, registrationFee: 0, courseFee: 0, status: 'Active', schedule: 'Weekday', type: 'Full Time', mode: 'Physical' })));
 const seedMpmaCourses = () => __awaiter(void 0, void 0, void 0, function* () {
     try {
         yield db_1.sequelize.authenticate();

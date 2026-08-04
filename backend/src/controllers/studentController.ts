@@ -665,6 +665,7 @@ export const updateApplicationStudent = async (req: Request, res: Response) => {
       'studentCategory',
       'nic',
       'passport',
+      'admin_notes',
     ] as const;
 
     const updates: Record<string, unknown> = {};
@@ -679,6 +680,11 @@ export const updateApplicationStudent = async (req: Request, res: Response) => {
     }
     if (req.body.passportNumber !== undefined && updates.passport === undefined) {
       updates.passport = req.body.passportNumber;
+    }
+    if (req.body.qualificationsData !== undefined && updates.admin_notes === undefined) {
+      updates.admin_notes = typeof req.body.qualificationsData === 'object'
+        ? JSON.stringify(req.body.qualificationsData)
+        : req.body.qualificationsData;
     }
 
     // Validate email uniqueness

@@ -11,10 +11,12 @@ import {
   AlertTriangle, 
   UserPlus, 
   Layers, 
-  CalendarDays
+  CalendarDays,
+  Download
 } from "lucide-react";
 import "react-toastify/dist/ReactToastify.css";
 import { fetchApi } from "../../../utils/api";
+import CourseReportModal from "../components/CourseReportModal";
 
 export default function ManageBatches() {
   const [batches, setBatches] = useState<any[]>([]);
@@ -22,6 +24,7 @@ export default function ManageBatches() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCourseFilter, setSelectedCourseFilter] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [isReportModalOpen, setIsReportModalOpen] = useState(false);
   const userRole = localStorage.getItem("userRole") || "user";
 
   const [form, setForm] = useState({
@@ -166,7 +169,7 @@ export default function ManageBatches() {
 
   return (
     <DashboardLayout>
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8">
+      <div className="sticky -top-8 bg-slate-50/95 backdrop-blur-sm z-10 -mx-8 px-8 pt-8 pb-4 mb-6 border-b border-slate-200/80 flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>
           <div className="flex items-center gap-3 mb-2">
             <div className="p-2 bg-emerald-100 text-emerald-700 justify-center rounded-lg">
@@ -187,7 +190,7 @@ export default function ManageBatches() {
         
         {/* Form Column */}
         <div className="lg:col-span-1">
-          <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden sticky top-28">
+          <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden sticky top-[190px]">
             <div className="p-5 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
               <h2 className="text-lg font-bold text-slate-800">
                 {editingId ? "Edit Batch" : "Add New Batch"}
@@ -353,7 +356,7 @@ export default function ManageBatches() {
                   ))}
                 </select>
 
-                <div className="relative w-full sm:w-64">
+                <div className="relative w-full sm:w-56">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                     <Search className="w-4 h-4 text-slate-400" />
                   </div>
@@ -365,6 +368,15 @@ export default function ManageBatches() {
                     className="w-full pl-9 pr-4 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all shadow-sm"
                   />
                 </div>
+
+                <button
+                  type="button"
+                  onClick={() => setIsReportModalOpen(true)}
+                  className="flex items-center justify-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white px-3.5 py-2 rounded-xl text-xs font-semibold shadow-sm transition-all shrink-0 cursor-pointer"
+                >
+                  <Download className="w-4 h-4" />
+                  Export Report
+                </button>
               </div>
             </div>
 
@@ -508,6 +520,14 @@ export default function ManageBatches() {
         </div>
 
       </div>
+
+      <CourseReportModal 
+        isOpen={isReportModalOpen}
+        onClose={() => setIsReportModalOpen(false)}
+        type="Batches"
+        data={batches}
+        coursesList={courses}
+      />
     </DashboardLayout>
   );
 }

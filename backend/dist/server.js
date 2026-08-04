@@ -33,6 +33,7 @@ const associations_1 = require("./models/associations");
 const publicCourseRoutes_1 = __importDefault(require("./routes/publicCourseRoutes"));
 const publicApplicationRoutes_1 = __importDefault(require("./routes/publicApplicationRoutes"));
 require("./models/SlpaEmployee");
+require("./models/CourseLecturer");
 // Set up model relationships
 (0, associations_1.setupAssociations)();
 const app = (0, express_1.default)();

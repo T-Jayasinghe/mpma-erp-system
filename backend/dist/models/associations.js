@@ -17,6 +17,7 @@ const StudentPayment_1 = __importDefault(require("./StudentPayment"));
 const Student_1 = __importDefault(require("./Student"));
 const ApplicationDocument_1 = __importDefault(require("./ApplicationDocument"));
 const VerificationChecklist_1 = __importDefault(require("./VerificationChecklist"));
+const CourseLecturer_1 = __importDefault(require("./CourseLecturer"));
 const setupAssociations = () => {
     // Classroom & Bookings
     Classroom_1.Classroom.hasMany(ClassroomBooking_1.ClassroomBooking, { foreignKey: 'classroomId', as: 'bookings' });
@@ -30,6 +31,14 @@ const setupAssociations = () => {
     // Course & Batch associations
     Course_1.Course.hasMany(Batch_1.Batch, { foreignKey: 'courseId', as: 'batches' });
     Batch_1.Batch.belongsTo(Course_1.Course, { foreignKey: 'courseId', as: 'course' });
+    // Course & Lecturer many-to-many associations
+    Course_1.Course.belongsToMany(Lecturer_1.Lecturer, { through: CourseLecturer_1.default, foreignKey: 'courseId', otherKey: 'lecturerId', as: 'lecturers' });
+    Lecturer_1.Lecturer.belongsToMany(Course_1.Course, { through: CourseLecturer_1.default, foreignKey: 'lecturerId', otherKey: 'courseId', as: 'courses' });
+    // Direct associations for junction query convenience
+    Course_1.Course.hasMany(CourseLecturer_1.default, { foreignKey: 'courseId', as: 'courseLecturerAssignments' });
+    CourseLecturer_1.default.belongsTo(Course_1.Course, { foreignKey: 'courseId', as: 'course' });
+    Lecturer_1.Lecturer.hasMany(CourseLecturer_1.default, { foreignKey: 'lecturerId', as: 'courseLecturerAssignments' });
+    CourseLecturer_1.default.belongsTo(Lecturer_1.Lecturer, { foreignKey: 'lecturerId', as: 'lecturer' });
     // Batch & Lecturer many-to-many associations
     Batch_1.Batch.belongsToMany(Lecturer_1.Lecturer, { through: BatchLecturer_1.BatchLecturer, foreignKey: 'batchId', otherKey: 'lecturerId', as: 'lecturers' });
     Lecturer_1.Lecturer.belongsToMany(Batch_1.Batch, { through: BatchLecturer_1.BatchLecturer, foreignKey: 'lecturerId', otherKey: 'batchId', as: 'batches' });

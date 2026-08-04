@@ -115,7 +115,7 @@ export default function ManageVehicles() {
 
   return (
     <DashboardLayout>
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8">
+      <div className="sticky -top-8 bg-slate-50/95 backdrop-blur-sm z-10 -mx-8 px-8 pt-8 pb-4 mb-6 border-b border-slate-200/80 flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>
           <div className="flex items-center gap-3 mb-2">
             <div className="p-2 bg-indigo-100 text-indigo-700 justify-center rounded-lg">
@@ -135,7 +135,7 @@ export default function ManageVehicles() {
         
         {/* Add Vehicle Form */}
         <div className="lg:col-span-1">
-          <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden sticky top-28">
+          <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden sticky top-[190px]">
             <div className="p-5 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
               <h2 className="text-lg font-bold text-slate-800">
                 {editingId ? "Edit Vehicle" : "Add New Vehicle"}

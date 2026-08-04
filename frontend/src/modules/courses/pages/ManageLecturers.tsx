@@ -9,16 +9,22 @@ import {
   Mail, 
   Home, 
   User, 
-  Landmark
+  Landmark,
+  Download
 } from "lucide-react";
 import "react-toastify/dist/ReactToastify.css";
 import { fetchApi } from "../../../utils/api";
+import CourseReportModal from "../components/CourseReportModal";
+import { parseSriLankanNIC } from "../../../utils/nicParser";
 
 export default function ManageLecturers() {
   const [lecturers, setLecturers] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [isReportModalOpen, setIsReportModalOpen] = useState(false);
   const userRole = localStorage.getItem("userRole") || "user";
+
+  const [selectedCategoryFilter, setSelectedCategoryFilter] = useState("All");
 
   const [form, setForm] = useState({
     fullName: "",
@@ -33,6 +39,12 @@ export default function ManageLecturers() {
     branchName: "",
     accountHolderName: "",
     accountNumber: "",
+    qualifications: "",
+    category: "SLPA",
+    epfNumber: "",
+    department: "",
+    companyName: "",
+    designation: "",
     status: "Active"
   });
 
@@ -53,9 +65,17 @@ export default function ManageLecturers() {
   };
 
   const handleChange = (e: any) => {
-    setForm({
-      ...form,
-      [e.target.name]: e.target.value
+    const { name, value } = e.target;
+    setForm(prev => {
+      const updated = { ...prev, [name]: value };
+      if (name === "nicPassport") {
+        const nicInfo = parseSriLankanNIC(value);
+        if (nicInfo) {
+          updated.dateOfBirth = nicInfo.dob;
+          updated.gender = nicInfo.gender;
+        }
+      }
+      return updated;
     });
   };
 
@@ -74,6 +94,12 @@ export default function ManageLecturers() {
       branchName: l.branchName,
       accountHolderName: l.accountHolderName,
       accountNumber: l.accountNumber,
+      qualifications: l.qualifications || "",
+      category: l.category === "Outside" ? "Outside" : "SLPA",
+      epfNumber: l.epfNumber || "",
+      department: l.department || "",
+      companyName: l.companyName || "",
+      designation: l.designation || "",
       status: l.status
     });
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -137,6 +163,12 @@ export default function ManageLecturers() {
       branchName: "",
       accountHolderName: "",
       accountNumber: "",
+      qualifications: "",
+      category: "SLPA",
+      epfNumber: "",
+      department: "",
+      companyName: "",
+      designation: "",
       status: "Active"
     });
   };
@@ -145,7 +177,7 @@ export default function ManageLecturers() {
 
   return (
     <DashboardLayout>
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8">
+      <div className="sticky -top-8 bg-slate-50/95 backdrop-blur-sm z-10 -mx-8 px-8 pt-8 pb-4 mb-6 border-b border-slate-200/80 flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>
           <div className="flex items-center gap-3 mb-2">
             <div className="p-2 bg-purple-100 text-purple-700 justify-center rounded-lg">
@@ -166,7 +198,7 @@ export default function ManageLecturers() {
         
         {/* Form Column */}
         <div className="lg:col-span-1">
-          <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden sticky top-28">
+          <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden sticky top-[190px]">
             <div className="p-5 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
               <h2 className="text-lg font-bold text-slate-800">
                 {editingId ? "Edit Lecturer" : "Register Lecturer"}
@@ -199,6 +231,85 @@ export default function ManageLecturers() {
                     required
                   />
                 </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-slate-700 mb-1">
+                    Category / Source <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    name="category"
+                    value={form.category}
+                    onChange={handleChange}
+                    className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 focus:bg-white outline-none transition-all font-medium"
+                    required
+                  >
+                    <option value="SLPA">SLPA (SLPA Internal / Port Authority Staff)</option>
+                    <option value="Outside">Outside (Visiting / External Lecturer)</option>
+                  </select>
+                </div>
+
+                {/* Conditional Fields based on Category */}
+                {form.category === "SLPA" ? (
+                  <div className="p-3.5 bg-blue-50/50 border border-blue-100 rounded-xl space-y-3">
+                    <p className="text-xs font-bold text-blue-800 uppercase tracking-wider">SLPA Employee Details</p>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-700 mb-1">EPF / Service No.</label>
+                        <input
+                          name="epfNumber"
+                          value={form.epfNumber}
+                          onChange={handleChange}
+                          placeholder="e.g. SLPA-10492"
+                          className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-700 mb-1">SLPA Department</label>
+                        <input
+                          name="department"
+                          value={form.department}
+                          onChange={handleChange}
+                          placeholder="e.g. Logistics & Navigation"
+                          className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none"
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-700 mb-1">SLPA Position / Designation</label>
+                      <input
+                        name="designation"
+                        value={form.designation}
+                        onChange={handleChange}
+                        placeholder="e.g. Senior Harbor Master"
+                        className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none"
+                      />
+                    </div>
+                  </div>
+                ) : (
+                  <div className="p-3.5 bg-amber-50/50 border border-amber-100 rounded-xl space-y-3">
+                    <p className="text-xs font-bold text-amber-800 uppercase tracking-wider">Outside Organization Details</p>
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-700 mb-1">Organization / Company Name</label>
+                      <input
+                        name="companyName"
+                        value={form.companyName}
+                        onChange={handleChange}
+                        placeholder="e.g. Maritime Institute of Colombo"
+                        className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 outline-none"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-700 mb-1">Designation / Role</label>
+                      <input
+                        name="designation"
+                        value={form.designation}
+                        onChange={handleChange}
+                        placeholder="e.g. Visiting Professor / Consultant"
+                        className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 outline-none"
+                      />
+                    </div>
+                  </div>
+                )}
 
                 <div className="grid grid-cols-2 gap-3">
                   <div>
@@ -270,10 +381,23 @@ export default function ManageLecturers() {
                   <textarea
                     name="address"
                     value={form.address}
+                    onChange={handleChange}
                     placeholder="Street, City, Postal Code"
                     rows={2}
                     className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 focus:bg-white outline-none transition-all resize-none"
                     required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-slate-700 mb-1">Qualifications</label>
+                  <textarea
+                    name="qualifications"
+                    value={form.qualifications || ""}
+                    onChange={handleChange}
+                    placeholder="e.g. B.Sc. in Marine Engineering, MBA, Certified Safety Officer..."
+                    rows={3}
+                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 focus:bg-white outline-none transition-all resize-none"
                   />
                 </div>
 
@@ -365,25 +489,56 @@ export default function ManageLecturers() {
             
             {/* List Utilities */}
             <div className="p-5 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between bg-slate-50/50 gap-4">
-              <div className="flex items-center gap-4">
-                <h2 className="text-lg font-bold text-slate-800">Lecturer Registry</h2>
-                <span className="text-sm font-medium text-slate-500 bg-white px-3 py-1 rounded-full border border-slate-200">
-                  Total: {lecturers.length}
-                </span>
+              <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+                <div className="flex items-center gap-3">
+                  <h2 className="text-lg font-bold text-slate-800">Lecturer Registry</h2>
+                  <span className="text-sm font-medium text-slate-500 bg-white px-3 py-1 rounded-full border border-slate-200">
+                    Total: {lecturers.length}
+                  </span>
+                </div>
               </div>
               
-              <div className="relative w-full sm:w-64">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Search className="w-4 h-4 text-slate-400" />
+              <div className="flex items-center gap-3 w-full sm:w-auto">
+                <div className="relative w-full sm:w-56">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <Search className="w-4 h-4 text-slate-400" />
+                  </div>
+                  <input 
+                    type="text"
+                    placeholder="Search lecturers..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full pl-9 pr-4 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 outline-none transition-all shadow-sm"
+                  />
                 </div>
-                <input 
-                  type="text"
-                  placeholder="Search lecturers..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-9 pr-4 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 outline-none transition-all shadow-sm"
-                />
+
+                <button
+                  type="button"
+                  onClick={() => setIsReportModalOpen(true)}
+                  className="flex items-center justify-center gap-1.5 bg-purple-600 hover:bg-purple-700 text-white px-3.5 py-2 rounded-xl text-xs font-semibold shadow-sm transition-all shrink-0 cursor-pointer"
+                >
+                  <Download className="w-4 h-4" />
+                  Export Report
+                </button>
               </div>
+            </div>
+
+            {/* Category Filter Tabs */}
+            <div className="px-5 pt-3 pb-1 border-b border-slate-100 flex items-center gap-2 overflow-x-auto bg-slate-50/30 text-xs font-semibold">
+              <span className="text-slate-400 uppercase tracking-wider text-[10px] mr-1">Filter:</span>
+              {["All", "SLPA", "Outside"].map((cat) => (
+                <button
+                  key={cat}
+                  onClick={() => setSelectedCategoryFilter(cat)}
+                  className={`px-3 py-1.5 rounded-lg border transition-all ${
+                    selectedCategoryFilter === cat
+                      ? "bg-purple-600 text-white border-purple-600 shadow-sm shadow-purple-500/20"
+                      : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50 hover:text-slate-800"
+                  }`}
+                >
+                  {cat === "All" ? "All Categories" : cat === "SLPA" ? "SLPA Staff" : "Outside / Visiting"}
+                </button>
+              ))}
             </div>
 
             {/* List Items */}
@@ -397,16 +552,27 @@ export default function ManageLecturers() {
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {lecturers
-                    .filter(l => 
-                      l.fullName.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                      l.nicPassport.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                      l.email.toLowerCase().includes(searchQuery.toLowerCase())
-                    )
+                    .filter(l => {
+                      const matchesSearch = 
+                        l.fullName.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                        l.nicPassport.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                        l.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                        (l.epfNumber && l.epfNumber.toLowerCase().includes(searchQuery.toLowerCase())) ||
+                        (l.companyName && l.companyName.toLowerCase().includes(searchQuery.toLowerCase()));
+                      
+                      const matchesCategory = 
+                        selectedCategoryFilter === "All" || 
+                        (l.category === "Outside" ? "Outside" : "SLPA") === selectedCategoryFilter;
+
+                      return matchesSearch && matchesCategory;
+                    })
                     .map((l, index) => {
                       const nameParts = l.fullName.split(" ");
                       const initials = nameParts.length > 1 
                         ? `${nameParts[0].charAt(0)}${nameParts[nameParts.length - 1].charAt(0)}` 
                         : l.fullName.substring(0, 2);
+                      
+                      const category = l.category === "Outside" ? "Outside" : "SLPA";
 
                       return (
                         <div 
@@ -419,8 +585,29 @@ export default function ManageLecturers() {
                                 {initials}
                               </div>
                               <div className="min-w-0">
-                                <h3 className="font-bold text-slate-800 text-sm truncate leading-tight">{l.fullName}</h3>
-                                <p className="text-[10px] text-slate-400 mt-1">NIC: {l.nicPassport}</p>
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  <h3 className="font-bold text-slate-800 text-sm truncate leading-tight">{l.fullName}</h3>
+                                </div>
+                                <div className="flex items-center gap-2 mt-1 flex-wrap">
+                                  <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold border ${
+                                    category === 'Outside'
+                                      ? 'bg-amber-50 border-amber-200 text-amber-800'
+                                      : 'bg-blue-50 border-blue-200 text-blue-700'
+                                  }`}>
+                                    {category === 'Outside' ? 'Outside' : 'SLPA Staff'}
+                                  </span>
+                                  <span className="text-[10px] text-slate-400">NIC: {l.nicPassport}</span>
+                                </div>
+                                {category === 'SLPA' && (l.epfNumber || l.department || l.designation) && (
+                                  <p className="text-[11px] text-blue-700 font-medium mt-1 truncate">
+                                    {[l.designation, l.department].filter(Boolean).join(' • ')} {l.epfNumber ? `(EPF: ${l.epfNumber})` : ''}
+                                  </p>
+                                )}
+                                {category === 'Outside' && (l.companyName || l.designation) && (
+                                  <p className="text-[11px] text-amber-800 font-medium mt-1 truncate">
+                                    {[l.designation, l.companyName].filter(Boolean).join(' @ ')}
+                                  </p>
+                                )}
                               </div>
                             </div>
 
@@ -462,6 +649,14 @@ export default function ManageLecturers() {
                             </div>
                           </div>
 
+                          {/* Qualifications */}
+                          {l.qualifications && (
+                            <div className="bg-blue-50 p-3 rounded-xl border border-blue-100 text-xs mb-3">
+                              <p className="font-semibold text-blue-700 mb-1.5 block">Qualifications</p>
+                              <p className="text-blue-600 line-clamp-3 whitespace-pre-wrap">{l.qualifications}</p>
+                            </div>
+                          )}
+
                           {/* Bank details card display */}
                           <div className="bg-slate-50 p-3 rounded-xl border border-slate-200 text-xs mt-auto flex items-center justify-between">
                             <div className="flex items-center gap-2 truncate">
@@ -490,6 +685,13 @@ export default function ManageLecturers() {
         </div>
 
       </div>
+
+      <CourseReportModal 
+        isOpen={isReportModalOpen}
+        onClose={() => setIsReportModalOpen(false)}
+        type="Lecturers"
+        data={lecturers}
+      />
     </DashboardLayout>
   );
 }

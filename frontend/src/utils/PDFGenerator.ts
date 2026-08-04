@@ -358,3 +358,311 @@ export const generateListReport = (title: string, columns: string[], rows: any[]
 
   doc.save(`${title.toLowerCase().replace(/\s+/g, '_')}_${new Date().toLocaleDateString().replace(/\//g, '-')}.pdf`);
 };
+
+export const exportToCSV = (filename: string, headers: string[], rows: (string | number | boolean)[][]) => {
+  const escapeCell = (cell: any) => {
+    if (cell === null || cell === undefined) return '""';
+    const str = String(cell).replace(/"/g, '""');
+    return `"${str}"`;
+  };
+
+  const csvContent = [
+    headers.map(escapeCell).join(','),
+    ...rows.map(row => row.map(escapeCell).join(','))
+  ].join('\r\n');
+
+  const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.setAttribute('href', url);
+  link.setAttribute('download', filename.endsWith('.csv') ? filename : `${filename}.csv`);
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+};
+
+export const generateCoursesReport = (courses: any[], filters: { stream?: string; mode?: string; schedule?: string; status?: string; search?: string }) => {
+  const doc = new jsPDF('l', 'mm', 'a4');
+  const pageWidth = doc.internal.pageSize.getWidth();
+
+  // Branding Header
+  doc.setFillColor(PRIMARY_COLOR[0], PRIMARY_COLOR[1], PRIMARY_COLOR[2]);
+  doc.rect(0, 0, pageWidth, 32, 'F');
+  
+  doc.setTextColor(255, 255, 255);
+  doc.setFontSize(20);
+  doc.setFont('helvetica', 'bold');
+  doc.text('MPMA ERP SYSTEM', 15, 18);
+
+  doc.setFontSize(11);
+  doc.setFont('helvetica', 'normal');
+  doc.text('Course Management - Courses Master Report', 15, 26);
+
+  // Metadata
+  doc.setFontSize(9);
+  doc.setTextColor(255, 255, 255);
+  doc.text(`Generated: ${new Date().toLocaleString('en-LK')}`, pageWidth - 15, 18, { align: 'right' });
+  doc.text(`Total Records: ${courses.length}`, pageWidth - 15, 26, { align: 'right' });
+
+  // Filter Summary Box
+  doc.setFillColor(248, 250, 252);
+  doc.rect(15, 36, pageWidth - 30, 14, 'F');
+  doc.setDrawColor(226, 232, 240);
+  doc.rect(15, 36, pageWidth - 30, 14, 'S');
+
+  doc.setTextColor(71, 85, 105);
+  doc.setFontSize(9);
+  doc.setFont('helvetica', 'bold');
+  const filterParts = [
+    `Stream: ${filters.stream || 'All'}`,
+    `Mode: ${filters.mode || 'All'}`,
+    `Schedule: ${filters.schedule || 'All'}`,
+    `Status: ${filters.status || 'All'}`,
+    filters.search ? `Search: "${filters.search}"` : ''
+  ].filter(Boolean).join('  |  ');
+  
+  doc.text(`Applied Filters:  ${filterParts}`, 20, 45);
+
+  const tableHead = [['#', 'Code', 'Course Title', 'Stream', 'Duration', 'Mode', 'Schedule', 'Max Pax', 'Reg Fee (LKR)', 'Course Fee (LKR)', 'Status']];
+  const tableBody = courses.map((c, index) => [
+    index + 1,
+    c.courseCode || 'N/A',
+    c.courseName || '',
+    c.stream || 'N/A',
+    c.duration || 'N/A',
+    c.mode || 'Physical',
+    c.schedule || 'N/A',
+    c.maxParticipants || 'N/A',
+    c.registrationFee ? Number(c.registrationFee).toLocaleString() : '0',
+    c.courseFee ? Number(c.courseFee).toLocaleString() : '0',
+    c.status || 'Active'
+  ]);
+
+  autoTable(doc, {
+    startY: 54,
+    head: tableHead,
+    body: tableBody,
+    theme: 'striped',
+    headStyles: { fillColor: PRIMARY_COLOR, textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 9 },
+    alternateRowStyles: { fillColor: [248, 250, 252] },
+    styles: { fontSize: 8.5, cellPadding: 3, font: 'helvetica' },
+    columnStyles: {
+      0: { cellWidth: 10, halign: 'center' },
+      1: { cellWidth: 25, fontStyle: 'bold' },
+      2: { cellWidth: 65 },
+      3: { cellWidth: 30 },
+      4: { cellWidth: 25 },
+      5: { cellWidth: 22 },
+      6: { cellWidth: 22 },
+      7: { cellWidth: 18, halign: 'center' },
+      8: { cellWidth: 25, halign: 'right' },
+      9: { cellWidth: 28, halign: 'right' },
+      10: { cellWidth: 18, halign: 'center' }
+    }
+  });
+
+  const pageCount = (doc as any).internal.getNumberOfPages();
+  for (let i = 1; i <= pageCount; i++) {
+    doc.setPage(i);
+    doc.setFontSize(8);
+    doc.setTextColor(148, 163, 184);
+    doc.text(`Page ${i} of ${pageCount}`, pageWidth / 2, doc.internal.pageSize.getHeight() - 8, { align: 'center' });
+    doc.text('MPMA ERP System - Official Course Report', 15, doc.internal.pageSize.getHeight() - 8);
+  }
+
+  doc.save(`courses_report_${new Date().toISOString().slice(0, 10)}.pdf`);
+};
+
+export const generateBatchesReport = (batches: any[], courses: any[], filters: { courseId?: string; status?: string; startDate?: string; endDate?: string; search?: string }) => {
+  const doc = new jsPDF('l', 'mm', 'a4');
+  const pageWidth = doc.internal.pageSize.getWidth();
+
+  const getCourseName = (courseId: string) => {
+    const course = courses.find((c: any) => c.id === courseId);
+    return course ? `${course.courseCode} - ${course.courseName}` : courseId || 'N/A';
+  };
+
+  // Branding Header
+  doc.setFillColor(PRIMARY_COLOR[0], PRIMARY_COLOR[1], PRIMARY_COLOR[2]);
+  doc.rect(0, 0, pageWidth, 32, 'F');
+  
+  doc.setTextColor(255, 255, 255);
+  doc.setFontSize(20);
+  doc.setFont('helvetica', 'bold');
+  doc.text('MPMA ERP SYSTEM', 15, 18);
+
+  doc.setFontSize(11);
+  doc.setFont('helvetica', 'normal');
+  doc.text('Course Management - Batches & Intake Report', 15, 26);
+
+  // Metadata
+  doc.setFontSize(9);
+  doc.setTextColor(255, 255, 255);
+  doc.text(`Generated: ${new Date().toLocaleString('en-LK')}`, pageWidth - 15, 18, { align: 'right' });
+  doc.text(`Total Batches: ${batches.length}`, pageWidth - 15, 26, { align: 'right' });
+
+  // Filter Summary Box
+  doc.setFillColor(248, 250, 252);
+  doc.rect(15, 36, pageWidth - 30, 14, 'F');
+  doc.setDrawColor(226, 232, 240);
+  doc.rect(15, 36, pageWidth - 30, 14, 'S');
+
+  doc.setTextColor(71, 85, 105);
+  doc.setFontSize(9);
+  doc.setFont('helvetica', 'bold');
+  
+  const courseFilterObj = filters.courseId ? courses.find(c => c.id === filters.courseId) : null;
+  const courseLabel = courseFilterObj ? courseFilterObj.courseCode : (filters.courseId ? 'Selected Course' : 'All Courses');
+  
+  const filterParts = [
+    `Course: ${courseLabel}`,
+    `Status: ${filters.status || 'All'}`,
+    filters.startDate ? `From: ${filters.startDate}` : '',
+    filters.endDate ? `To: ${filters.endDate}` : '',
+    filters.search ? `Search: "${filters.search}"` : ''
+  ].filter(Boolean).join('  |  ');
+  
+  doc.text(`Applied Filters:  ${filterParts}`, 20, 45);
+
+  const tableHead = [['#', 'Batch Code', 'Course Title', 'Location', 'Start Date', 'End Date', 'Enrolled', 'Max Capacity', 'Occupancy', 'Status']];
+  const tableBody = batches.map((b, index) => {
+    const enrolled = Number(b.currentStudents || 0);
+    const maxCap = Number(b.maxStudents || 0);
+    const occupancy = maxCap > 0 ? `${Math.round((enrolled / maxCap) * 100)}%` : '0%';
+
+    return [
+      index + 1,
+      b.batchCode || 'N/A',
+      getCourseName(b.courseId),
+      b.location || 'N/A',
+      b.startDate ? new Date(b.startDate).toLocaleDateString('en-LK') : 'N/A',
+      b.endDate ? new Date(b.endDate).toLocaleDateString('en-LK') : 'N/A',
+      enrolled,
+      maxCap,
+      occupancy,
+      b.status || 'Available'
+    ];
+  });
+
+  autoTable(doc, {
+    startY: 54,
+    head: tableHead,
+    body: tableBody,
+    theme: 'striped',
+    headStyles: { fillColor: PRIMARY_COLOR, textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 9 },
+    alternateRowStyles: { fillColor: [248, 250, 252] },
+    styles: { fontSize: 8.5, cellPadding: 3, font: 'helvetica' },
+    columnStyles: {
+      0: { cellWidth: 10, halign: 'center' },
+      1: { cellWidth: 28, fontStyle: 'bold' },
+      2: { cellWidth: 80 },
+      3: { cellWidth: 35 },
+      4: { cellWidth: 25 },
+      5: { cellWidth: 25 },
+      6: { cellWidth: 20, halign: 'center' },
+      7: { cellWidth: 22, halign: 'center' },
+      8: { cellWidth: 22, halign: 'center' },
+      9: { cellWidth: 22, halign: 'center' }
+    }
+  });
+
+  const pageCount = (doc as any).internal.getNumberOfPages();
+  for (let i = 1; i <= pageCount; i++) {
+    doc.setPage(i);
+    doc.setFontSize(8);
+    doc.setTextColor(148, 163, 184);
+    doc.text(`Page ${i} of ${pageCount}`, pageWidth / 2, doc.internal.pageSize.getHeight() - 8, { align: 'center' });
+    doc.text('MPMA ERP System - Official Batches Report', 15, doc.internal.pageSize.getHeight() - 8);
+  }
+
+  doc.save(`batches_report_${new Date().toISOString().slice(0, 10)}.pdf`);
+};
+
+export const generateLecturersReport = (lecturers: any[], filters: { category?: string; status?: string; department?: string; search?: string }) => {
+  const doc = new jsPDF('l', 'mm', 'a4');
+  const pageWidth = doc.internal.pageSize.getWidth();
+
+  // Branding Header
+  doc.setFillColor(PRIMARY_COLOR[0], PRIMARY_COLOR[1], PRIMARY_COLOR[2]);
+  doc.rect(0, 0, pageWidth, 32, 'F');
+  
+  doc.setTextColor(255, 255, 255);
+  doc.setFontSize(20);
+  doc.setFont('helvetica', 'bold');
+  doc.text('MPMA ERP SYSTEM', 15, 18);
+
+  doc.setFontSize(11);
+  doc.setFont('helvetica', 'normal');
+  doc.text('Course Management - Lecturers Master Report', 15, 26);
+
+  // Metadata
+  doc.setFontSize(9);
+  doc.setTextColor(255, 255, 255);
+  doc.text(`Generated: ${new Date().toLocaleString('en-LK')}`, pageWidth - 15, 18, { align: 'right' });
+  doc.text(`Total Lecturers: ${lecturers.length}`, pageWidth - 15, 26, { align: 'right' });
+
+  // Filter Summary Box
+  doc.setFillColor(248, 250, 252);
+  doc.rect(15, 36, pageWidth - 30, 14, 'F');
+  doc.setDrawColor(226, 232, 240);
+  doc.rect(15, 36, pageWidth - 30, 14, 'S');
+
+  doc.setTextColor(71, 85, 105);
+  doc.setFontSize(9);
+  doc.setFont('helvetica', 'bold');
+  const filterParts = [
+    `Category: ${filters.category || 'All'}`,
+    `Department: ${filters.department || 'All'}`,
+    `Status: ${filters.status || 'All'}`,
+    filters.search ? `Search: "${filters.search}"` : ''
+  ].filter(Boolean).join('  |  ');
+  
+  doc.text(`Applied Filters:  ${filterParts}`, 20, 45);
+
+  const tableHead = [['#', 'Full Name', 'Category', 'NIC / Passport', 'Mobile', 'Email', 'Department / Company', 'Designation', 'Status']];
+  const tableBody = lecturers.map((l, index) => [
+    index + 1,
+    l.fullName || 'N/A',
+    l.category === 'Outside' ? 'Outside' : 'SLPA Internal',
+    l.nicPassport || 'N/A',
+    l.mobile || 'N/A',
+    l.email || 'N/A',
+    l.category === 'Outside' ? (l.companyName || 'N/A') : (l.department || 'SLPA'),
+    l.designation || 'N/A',
+    l.status || 'Active'
+  ]);
+
+  autoTable(doc, {
+    startY: 54,
+    head: tableHead,
+    body: tableBody,
+    theme: 'striped',
+    headStyles: { fillColor: PRIMARY_COLOR, textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 9 },
+    alternateRowStyles: { fillColor: [248, 250, 252] },
+    styles: { fontSize: 8.5, cellPadding: 3, font: 'helvetica' },
+    columnStyles: {
+      0: { cellWidth: 10, halign: 'center' },
+      1: { cellWidth: 45, fontStyle: 'bold' },
+      2: { cellWidth: 25 },
+      3: { cellWidth: 28 },
+      4: { cellWidth: 28 },
+      5: { cellWidth: 48 },
+      6: { cellWidth: 40 },
+      7: { cellWidth: 30 },
+      8: { cellWidth: 20, halign: 'center' }
+    }
+  });
+
+  const pageCount = (doc as any).internal.getNumberOfPages();
+  for (let i = 1; i <= pageCount; i++) {
+    doc.setPage(i);
+    doc.setFontSize(8);
+    doc.setTextColor(148, 163, 184);
+    doc.text(`Page ${i} of ${pageCount}`, pageWidth / 2, doc.internal.pageSize.getHeight() - 8, { align: 'center' });
+    doc.text('MPMA ERP System - Official Lecturers Report', 15, doc.internal.pageSize.getHeight() - 8);
+  }
+
+  doc.save(`lecturers_report_${new Date().toISOString().slice(0, 10)}.pdf`);
+};
+

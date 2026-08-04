@@ -12,6 +12,11 @@ router.use(auth_1.protect);
 router.route('/')
     .get(courseController_1.getCourses)
     .post(courseController_1.createCourse);
+router.route('/:id/lecturers')
+    .get(courseController_1.getCourseLecturers)
+    .post(courseController_1.assignLecturerToCourse);
+router.route('/:id/lecturers/:lecturerId')
+    .delete(courseController_1.removeLecturerFromCourse);
 router.route('/:id')
     .get(courseController_1.getCourseById)
     .put(courseController_1.updateCourse);

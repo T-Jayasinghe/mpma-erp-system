@@ -32,6 +32,85 @@ const connectDB = () => __awaiter(void 0, void 0, void 0, function* () {
         // Synchronize all models
         yield sequelize.sync();
         console.log('MySQL Database synchronized.');
+        // Programmatically ensure new Course columns exist
+        try {
+            const queryInterface = sequelize.getQueryInterface();
+            const tableDefinition = yield queryInterface.describeTable('courses');
+            if (!tableDefinition.schedule) {
+                yield queryInterface.addColumn('courses', 'schedule', {
+                    type: sequelize_1.DataTypes.ENUM('Weekday', 'Weekend'),
+                    allowNull: true,
+                    defaultValue: 'Weekday',
+                });
+                console.log('Successfully added missing column "schedule" to courses table.');
+            }
+            if (!tableDefinition.type) {
+                yield queryInterface.addColumn('courses', 'type', {
+                    type: sequelize_1.DataTypes.ENUM('Full Time', 'Part Time'),
+                    allowNull: true,
+                    defaultValue: 'Full Time',
+                });
+                console.log('Successfully added missing column "type" to courses table.');
+            }
+            if (!tableDefinition.mode) {
+                yield queryInterface.addColumn('courses', 'mode', {
+                    type: sequelize_1.DataTypes.ENUM('Online', 'Physical', 'Hybrid'),
+                    allowNull: true,
+                    defaultValue: 'Physical',
+                });
+                console.log('Successfully added missing column "mode" to courses table.');
+            }
+        }
+        catch (migrationError) {
+            console.warn('Notice: Course table column checks skipped or table does not exist yet:', migrationError.message);
+        }
+        // Programmatically ensure new Lecturer columns exist
+        try {
+            const queryInterface = sequelize.getQueryInterface();
+            const lecturerTableDefinition = yield queryInterface.describeTable('lecturers');
+            if (!lecturerTableDefinition.qualifications) {
+                yield queryInterface.addColumn('lecturers', 'qualifications', {
+                    type: sequelize_1.DataTypes.TEXT,
+                    allowNull: true,
+                });
+                console.log('Successfully added missing column "qualifications" to lecturers table.');
+            }
+            if (!lecturerTableDefinition.category) {
+                yield queryInterface.addColumn('lecturers', 'category', {
+                    type: sequelize_1.DataTypes.ENUM('SLPA', 'Outside'),
+                    allowNull: false,
+                    defaultValue: 'SLPA',
+                });
+                console.log('Successfully added missing column "category" to lecturers table.');
+            }
+            if (!lecturerTableDefinition.epfNumber) {
+                yield queryInterface.addColumn('lecturers', 'epfNumber', {
+                    type: sequelize_1.DataTypes.STRING,
+                    allowNull: true,
+                });
+            }
+            if (!lecturerTableDefinition.department) {
+                yield queryInterface.addColumn('lecturers', 'department', {
+                    type: sequelize_1.DataTypes.STRING,
+                    allowNull: true,
+                });
+            }
+            if (!lecturerTableDefinition.companyName) {
+                yield queryInterface.addColumn('lecturers', 'companyName', {
+                    type: sequelize_1.DataTypes.STRING,
+                    allowNull: true,
+                });
+            }
+            if (!lecturerTableDefinition.designation) {
+                yield queryInterface.addColumn('lecturers', 'designation', {
+                    type: sequelize_1.DataTypes.STRING,
+                    allowNull: true,
+                });
+            }
+        }
+        catch (migrationError) {
+            console.warn('Notice: Lecturer table column checks skipped or table does not exist yet:', migrationError.message);
+        }
     }
     catch (error) {
         console.error(`Error connecting to MySQL: ${error.message}`);

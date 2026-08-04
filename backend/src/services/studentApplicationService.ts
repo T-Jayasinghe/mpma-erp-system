@@ -53,10 +53,22 @@ export async function createStudentApplication(body: any, files: Express.Multer.
       company_name: clean(body.companyName) || null, outside_position: clean(body.outsidePosition) || null,
       service_number: clean(body.serviceNumber) || null, epf_number: clean(body.epfNumber) || null, department: clean(body.department) || null,
       slpa_position: clean(body.slpaPosition) || null,
+      admin_notes: typeof body.qualificationsData === 'object' ? JSON.stringify(body.qualificationsData) : (clean(body.qualificationsData || body.admin_notes) || null),
     }, { transaction });
     const applicationNumber = `MPMA-APP-${new Date().getFullYear()}-${String(await Student.count({ transaction })).padStart(6, '0')}`;
     await student.update({ application_number: applicationNumber }, { transaction });
-    if (files.length) await ApplicationDocument.bulkCreate(files.map(file => ({ student_id: student.id, document_type: clean((body.documentTypes || '').split(',')[0]) || 'Support Document', file_name: file.originalname, mime_type: file.mimetype, file_data: file.buffer, uploaded_by_admin: enrollmentType === 'ADMIN_DIRECT' })), { transaction });
+    if (files.length) {
+      const rawTypes = body.documentTypes || body.document_types || '';
+      const docTypesList = typeof rawTypes === 'string' ? rawTypes.split(',') : (Array.isArray(rawTypes) ? rawTypes : []);
+      await ApplicationDocument.bulkCreate(files.map((file, idx) => ({
+        student_id: student.id,
+        document_type: clean(docTypesList[idx]) || 'Support Document',
+        file_name: file.originalname,
+        mime_type: file.mimetype,
+        file_data: file.buffer,
+        uploaded_by_admin: enrollmentType === 'ADMIN_DIRECT'
+      })), { transaction });
+    }
     return { applicationId: student.id, applicationNumber };
   });
 }

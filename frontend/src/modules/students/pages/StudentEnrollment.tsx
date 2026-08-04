@@ -22,15 +22,73 @@ import {
   Loader2,
   CheckCircle2,
   Users,
-  Flag
+  Flag,
+  Award,
+  Plus,
+  Trash2,
+  BookOpen
 } from "lucide-react";
 import { toast } from "react-toastify";
 import { fetchApi } from "../../../utils/api";
+import { parseSriLankanNIC } from "../../../utils/nicParser";
 
 type StudentCategory = "SLPA Employee" | "Sri Lankan Student" | "Non-Sri Lankan Student";
 
 interface CourseOption { id: string; courseCode: string; courseName: string; }
 interface BatchOption { id: string; batchCode: string; startDate: string; }
+
+const MAIN_OL_SUBJECTS = [
+  "Mathematics",
+  "Science",
+  "English Language",
+  "Sinhala Language & Literature",
+  "Tamil Language & Literature",
+  "History",
+  "Buddhism",
+  "Hinduism",
+  "Christianity / Catholicism",
+  "Islam",
+  "Information & Communication Technology (ICT)",
+  "Business & Accounting Studies",
+  "Geography",
+  "Civic Education",
+  "English Literature",
+  "Art",
+  "Music",
+  "Dancing",
+  "Drama & Theatre",
+  "Health & Physical Education",
+  "Agriculture & Food Technology",
+  "Design & Mechanical Technology",
+  "Home Economics",
+  "Other (Type Custom Subject)"
+];
+
+const MAIN_AL_SUBJECTS = [
+  "Combined Mathematics",
+  "Higher Mathematics",
+  "Physics",
+  "Chemistry",
+  "Biology",
+  "Agricultural Science",
+  "Accounting",
+  "Business Studies",
+  "Economics",
+  "Information & Communication Technology (ICT)",
+  "Engineering Technology",
+  "Science for Technology",
+  "Bio Systems Technology",
+  "Political Science",
+  "Logic & Scientific Method",
+  "Geography",
+  "History",
+  "Sinhala",
+  "Tamil",
+  "English Literature",
+  "General English",
+  "General Information Technology (GIT)",
+  "Other (Type Custom Subject)"
+];
 
 const StudentEnrollment = () => {
   const navigate = useNavigate();
@@ -67,16 +125,48 @@ const StudentEnrollment = () => {
     serviceNumber: "",
     registrationDate: new Date().toISOString().split('T')[0],
 
-    // Step 5: Additional Details
+    // Step 5: Educational Qualifications (Starts Empty as requested)
+    olYear: "",
+    olIndexNumber: "",
+    olMedium: "English",
+    olSubjects: [] as { id: string; subject: string; grade: string }[],
+
+    alStream: "Physical Science",
+    alYear: "",
+    alIndexNumber: "",
+    alZScore: "",
+    alSubjects: [] as { id: string; subject: string; grade: string }[],
+
+    otherQualifications: [] as { id: string; title: string; institute: string; year: string; result: string }[],
+
+    // Step 6: Additional Details
     companyName: "",
     outsidePosition: "",
     epfNumber: "",
     department: "",
     slpaPosition: "",
 
-    // Step 6: Documents
+    // Step 7: Documents
     documents: [] as File[]
   });
+
+  const [olCertificate, setOlCertificate] = useState<File | null>(null);
+  const [alCertificate, setAlCertificate] = useState<File | null>(null);
+  const [higherCertificate, setHigherCertificate] = useState<File | null>(null);
+  const [otherDocuments, setOtherDocuments] = useState<File[]>([]);
+
+  const [newOLSubjectSelect, setNewOLSubjectSelect] = useState("");
+  const [newOLSubjectCustom, setNewOLSubjectCustom] = useState("");
+  const [newOLGrade, setNewOLGrade] = useState("A");
+
+  const [newALSubjectSelect, setNewALSubjectSelect] = useState("");
+  const [newALSubjectCustom, setNewALSubjectCustom] = useState("");
+  const [newALGrade, setNewALGrade] = useState("A");
+
+  const [newOtherTitle, setNewOtherTitle] = useState("");
+  const [newOtherInstitute, setNewOtherInstitute] = useState("");
+  const [newOtherYear, setNewOtherYear] = useState("");
+  const [newOtherResult, setNewOtherResult] = useState("");
 
   const [employeeSearchId, setEmployeeSearchId] = useState("");
   const [isSearchingEmployee, setIsSearchingEmployee] = useState(false);
@@ -84,6 +174,84 @@ const StudentEnrollment = () => {
   const [batches, setBatches] = useState<BatchOption[]>([]);
   const [courseLoading, setCourseLoading] = useState(false);
   const [applicationNumber, setApplicationNumber] = useState("");
+
+  const handleAddOLSubject = () => {
+    const subjectName = newOLSubjectSelect === "Other" ? newOLSubjectCustom.trim() : newOLSubjectSelect.trim();
+    if (!subjectName) {
+      toast.warning("Please select or enter an O/L subject name");
+      return;
+    }
+    setFormData(prev => ({
+      ...prev,
+      olSubjects: [...prev.olSubjects, { id: `ol-${Date.now()}`, subject: subjectName, grade: newOLGrade }]
+    }));
+    setNewOLSubjectSelect("");
+    setNewOLSubjectCustom("");
+    setNewOLGrade("A");
+    toast.success(`O/L Subject "${subjectName}" added to table`);
+  };
+
+  const handleRemoveOLSubject = (id: string) => {
+    setFormData(prev => ({
+      ...prev,
+      olSubjects: prev.olSubjects.filter(sub => sub.id !== id)
+    }));
+  };
+
+  const handleAddALSubject = () => {
+    const subjectName = newALSubjectSelect === "Other" ? newALSubjectCustom.trim() : newALSubjectSelect.trim();
+    if (!subjectName) {
+      toast.warning("Please select or enter an A/L subject name");
+      return;
+    }
+    setFormData(prev => ({
+      ...prev,
+      alSubjects: [...prev.alSubjects, { id: `al-${Date.now()}`, subject: subjectName, grade: newALGrade }]
+    }));
+    setNewALSubjectSelect("");
+    setNewALSubjectCustom("");
+    setNewALGrade("A");
+    toast.success(`A/L Subject "${subjectName}" added to table`);
+  };
+
+  const handleRemoveALSubject = (id: string) => {
+    setFormData(prev => ({
+      ...prev,
+      alSubjects: prev.alSubjects.filter(sub => sub.id !== id)
+    }));
+  };
+
+  const handleAddOtherQualification = () => {
+    if (!newOtherTitle.trim()) {
+      toast.warning("Please enter qualification title");
+      return;
+    }
+    setFormData(prev => ({
+      ...prev,
+      otherQualifications: [
+        ...prev.otherQualifications,
+        {
+          id: `other-${Date.now()}`,
+          title: newOtherTitle.trim(),
+          institute: newOtherInstitute.trim() || "N/A",
+          year: newOtherYear.trim() || "N/A",
+          result: newOtherResult.trim() || "Pass"
+        }
+      ]
+    }));
+    setNewOtherTitle("");
+    setNewOtherInstitute("");
+    setNewOtherYear("");
+    setNewOtherResult("");
+    toast.success("Qualification record added to table");
+  };
+
+  const handleRemoveOtherQualification = (id: string) => {
+    setFormData(prev => ({
+      ...prev,
+      otherQualifications: prev.otherQualifications.filter(q => q.id !== id)
+    }));
+  };
 
   useEffect(() => {
     setCourseLoading(true);
@@ -103,17 +271,37 @@ const StudentEnrollment = () => {
     { id: 2, title: "Personal Information", icon: User },
     { id: 3, title: "Contact Information", icon: Mail },
     { id: 4, title: "Course Selection", icon: GraduationCap },
-    { id: 5, title: "Additional Details", icon: Info },
-    { id: 6, title: "Documents", icon: Upload },
+    { id: 5, title: "Educational Qualifications", icon: Award },
+    { id: 6, title: "Additional Details", icon: Info },
+    { id: 7, title: "Documents", icon: Upload },
   ];
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    
+    setFormData(prev => {
+      const updated = { ...prev, [name]: value };
+
+      // Auto-extract DOB and Gender if NIC number is entered/changed
+      if (name === "idNumber") {
+        const nicInfo = parseSriLankanNIC(value);
+        if (nicInfo) {
+          updated.dob = nicInfo.dob;
+          updated.gender = nicInfo.gender;
+        }
+      }
+
+      return updated;
+    });
+
     if (errors[name]) {
       setErrors(prev => {
         const newErrors = { ...prev };
         delete newErrors[name];
+        if (name === "idNumber") {
+          delete newErrors.dob;
+          delete newErrors.gender;
+        }
         return newErrors;
       });
     }
@@ -132,6 +320,7 @@ const StudentEnrollment = () => {
     }));
     setEmployeeSearchId("");
     setErrors({});
+    setCurrentStep(2);
   };
 
   const validateStep = (step: number) => {
@@ -172,7 +361,7 @@ const StudentEnrollment = () => {
 
   const handleNext = () => {
     if (validateStep(currentStep)) {
-      if (currentStep < 6) setCurrentStep(prev => prev + 1);
+      if (currentStep < 7) setCurrentStep(prev => prev + 1);
     } else {
       toast.error("Please fill in all required fields.");
     }
@@ -212,13 +401,30 @@ const StudentEnrollment = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!validateStep(6)) return;
+    if (!validateStep(7)) return;
 
     setLoading(true);
     try {
       const names = formData.fullName.split(" ");
       const firstName = names[0];
       const lastName = names.slice(1).join(" ") || " ";
+
+      const qualificationsData = JSON.stringify({
+        ol: {
+          year: formData.olYear,
+          indexNumber: formData.olIndexNumber,
+          medium: formData.olMedium,
+          subjects: formData.olSubjects
+        },
+        al: {
+          stream: formData.alStream,
+          year: formData.alYear,
+          indexNumber: formData.alIndexNumber,
+          zScore: formData.alZScore,
+          subjects: formData.alSubjects
+        },
+        otherQualifications: formData.otherQualifications
+      });
 
       const submitData = {
         firstName,
@@ -236,10 +442,40 @@ const StudentEnrollment = () => {
         companyName: formData.companyName, outsidePosition: formData.outsidePosition,
         serviceNumber: formData.serviceNumber, epfNumber: formData.epfNumber, department: formData.department,
         slpaPosition: formData.slpaPosition, enrollmentType: 'ADMIN_DIRECT',
+        qualificationsData,
       };
+
+      const filesToUpload: File[] = [];
+      const documentTypesToUpload: string[] = [];
+
+      if (olCertificate) {
+        filesToUpload.push(olCertificate);
+        documentTypesToUpload.push("O/L Certificate");
+      }
+      if (alCertificate) {
+        filesToUpload.push(alCertificate);
+        documentTypesToUpload.push("A/L Certificate");
+      }
+      if (higherCertificate) {
+        filesToUpload.push(higherCertificate);
+        documentTypesToUpload.push("Higher Qualification Certificate");
+      }
+      otherDocuments.forEach((file) => {
+        filesToUpload.push(file);
+        documentTypesToUpload.push("Support Document");
+      });
+      formData.documents.forEach((file) => {
+        if (!filesToUpload.includes(file)) {
+          filesToUpload.push(file);
+          documentTypesToUpload.push("Support Document");
+        }
+      });
+
       const payload = new FormData();
       Object.entries(submitData).forEach(([key, value]) => payload.append(key, value));
-      formData.documents.forEach(file => payload.append('documents', file));
+      payload.append("documentTypes", documentTypesToUpload.join(","));
+      filesToUpload.forEach(file => payload.append('documents', file));
+
       const response = await fetchApi('/students/register', {
         method: 'POST',
         body: payload
@@ -477,20 +713,31 @@ const StudentEnrollment = () => {
                       </div>
 
                       {formData.studentCategory === "Sri Lankan Student" ? (
-                        <div className="space-y-2">
-                          <label className="text-sm font-bold text-slate-700 ml-1">NIC Number <span className="text-red-500">*</span></label>
-                          <div className="relative">
-                            <IdCard className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-                            <input
-                              name="idNumber"
-                              value={formData.idNumber}
-                              onChange={handleInputChange}
-                              className={`w-full pl-12 pr-4 py-4 bg-slate-50 border-2 border-transparent rounded-[1.25rem] text-sm font-semibold focus:bg-white focus:border-brand-500 outline-none transition-all ${errors.idNumber ? 'border-red-400' : ''}`}
-                              placeholder="eg: 199512345678"
-                            />
+                          <div className="space-y-2">
+                            <label className="text-sm font-bold text-slate-700 ml-1">NIC Number <span className="text-red-500">*</span></label>
+                            <div className="relative">
+                              <IdCard className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                              <input
+                                name="idNumber"
+                                value={formData.idNumber}
+                                onChange={handleInputChange}
+                                className={`w-full pl-12 pr-4 py-4 bg-slate-50 border-2 border-transparent rounded-[1.25rem] text-sm font-semibold focus:bg-white focus:border-brand-500 outline-none transition-all ${errors.idNumber ? 'border-red-400' : ''}`}
+                                placeholder="eg: 199512345678 or 952341234V"
+                              />
+                            </div>
+                            {parseSriLankanNIC(formData.idNumber) && (
+                              <div className="p-2.5 bg-emerald-50 border border-emerald-200/80 rounded-xl text-xs font-semibold text-emerald-700 flex items-center justify-between animate-in fade-in duration-200 mt-1.5">
+                                <span className="flex items-center gap-1.5">
+                                  <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                                  Auto-detected from NIC:
+                                </span>
+                                <span className="font-bold bg-white px-2.5 py-0.5 rounded-lg border border-emerald-200 text-emerald-800 shadow-2xs">
+                                  DOB: {formData.dob} &bull; Gender: {formData.gender}
+                                </span>
+                              </div>
+                            )}
+                            {errors.idNumber && <p className="text-xs text-red-500 mt-1 ml-1 font-bold">{errors.idNumber}</p>}
                           </div>
-                          {errors.idNumber && <p className="text-xs text-red-500 mt-1 ml-1 font-bold">{errors.idNumber}</p>}
-                        </div>
                       ) : (
                         <div className="space-y-2">
                           <label className="text-sm font-bold text-slate-700 ml-1">Passport Number <span className="text-red-500">*</span></label>
@@ -690,8 +937,460 @@ const StudentEnrollment = () => {
                 </div>
               )}
 
-              {/* Step 5: Additional Details */}
+              {/* Step 5: Educational Qualifications */}
               {currentStep === 5 && (
+                <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                  <div className="flex items-center gap-4 py-4 border-b border-slate-50">
+                    <div className="w-12 h-12 rounded-2xl bg-amber-50 flex items-center justify-center text-amber-600">
+                      <Award className="w-6 h-6" />
+                    </div>
+                    <div>
+                      <h2 className="text-xl font-bold text-slate-800">Educational Qualifications</h2>
+                      <p className="text-sm text-slate-500">
+                        Add your G.C.E. O/L results, G.C.E. A/L results, and higher qualifications step by step.
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Section 1: G.C.E. O/L Results */}
+                  <div className="bg-slate-50/70 rounded-[2rem] p-8 border border-slate-100 space-y-6">
+                    <div className="flex items-center justify-between border-b border-slate-200/60 pb-4">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2.5 bg-blue-100 text-blue-700 rounded-xl font-black text-xs uppercase tracking-wider">
+                          Part 1
+                        </div>
+                        <div>
+                          <h3 className="text-lg font-bold text-slate-800">1. G.C.E. Ordinary Level (O/L) Results</h3>
+                          <p className="text-xs text-slate-500">Enter exam details and subject grades table</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                      <div>
+                        <label className="text-xs font-bold text-slate-700 ml-1">Examination Year</label>
+                        <input
+                          type="number"
+                          name="olYear"
+                          value={formData.olYear}
+                          onChange={handleInputChange}
+                          placeholder="e.g. 2018"
+                          className="w-full px-4 py-3 mt-1 bg-white border border-slate-200 rounded-xl text-sm font-semibold focus:border-brand-500 outline-none"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-xs font-bold text-slate-700 ml-1">Index Number</label>
+                        <input
+                          type="text"
+                          name="olIndexNumber"
+                          value={formData.olIndexNumber}
+                          onChange={handleInputChange}
+                          placeholder="e.g. 81234567"
+                          className="w-full px-4 py-3 mt-1 bg-white border border-slate-200 rounded-xl text-sm font-semibold focus:border-brand-500 outline-none"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-xs font-bold text-slate-700 ml-1">Examination Medium</label>
+                        <select
+                          name="olMedium"
+                          value={formData.olMedium}
+                          onChange={handleInputChange}
+                          className="w-full px-4 py-3 mt-1 bg-white border border-slate-200 rounded-xl text-sm font-semibold focus:border-brand-500 outline-none cursor-pointer"
+                        >
+                          <option value="English">English</option>
+                          <option value="Sinhala">Sinhala</option>
+                          <option value="Tamil">Tamil</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    {/* Add O/L Subject Row */}
+                    <div className="p-4 bg-white rounded-2xl border border-slate-200/80 space-y-3">
+                      <label className="text-xs font-bold text-slate-700">Select O/L Subject & Grade</label>
+                      <div className="flex flex-col sm:flex-row gap-3">
+                        <select
+                          value={newOLSubjectSelect}
+                          onChange={(e) => {
+                            setNewOLSubjectSelect(e.target.value);
+                            if (e.target.value !== "Other") {
+                              setNewOLSubjectCustom("");
+                            }
+                          }}
+                          className="flex-1 px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold focus:border-brand-500 outline-none cursor-pointer"
+                        >
+                          <option value="">Select Main O/L Subject...</option>
+                          {MAIN_OL_SUBJECTS.map((sub) => (
+                            <option key={sub} value={sub === "Other (Type Custom Subject)" ? "Other" : sub}>
+                              {sub}
+                            </option>
+                          ))}
+                        </select>
+
+                        {newOLSubjectSelect === "Other" && (
+                          <input
+                            type="text"
+                            value={newOLSubjectCustom}
+                            onChange={(e) => setNewOLSubjectCustom(e.target.value)}
+                            placeholder="Type custom O/L subject..."
+                            className="flex-1 px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold focus:border-brand-500 outline-none"
+                          />
+                        )}
+
+                        <select
+                          value={newOLGrade}
+                          onChange={(e) => setNewOLGrade(e.target.value)}
+                          className="w-28 px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold focus:border-brand-500 outline-none cursor-pointer"
+                        >
+                          <option value="A">Grade A</option>
+                          <option value="B">Grade B</option>
+                          <option value="C">Grade C</option>
+                          <option value="S">Grade S</option>
+                          <option value="W">Grade W</option>
+                          <option value="F">Grade F</option>
+                        </select>
+                        <button
+                          type="button"
+                          onClick={handleAddOLSubject}
+                          className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-sm transition-all flex items-center gap-1.5 justify-center cursor-pointer shrink-0"
+                        >
+                          <Plus className="w-4 h-4" /> Add Subject
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* O/L Subjects Table */}
+                    <div className="overflow-hidden bg-white rounded-2xl border border-slate-200/80 shadow-2xs">
+                      <table className="w-full text-left text-xs">
+                        <thead className="bg-slate-100/70 text-slate-700 font-bold uppercase border-b border-slate-200">
+                          <tr>
+                            <th className="py-3 px-4 w-12 text-center">#</th>
+                            <th className="py-3 px-4">O/L Subject Name</th>
+                            <th className="py-3 px-4 w-28 text-center">Result Grade</th>
+                            <th className="py-3 px-4 w-20 text-center">Action</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100">
+                          {formData.olSubjects.length === 0 ? (
+                            <tr>
+                              <td colSpan={4} className="py-6 text-center text-slate-400 font-medium italic">
+                                No O/L subjects added yet. Select a subject from the dropdown above to add it to your table.
+                              </td>
+                            </tr>
+                          ) : (
+                            formData.olSubjects.map((sub, idx) => (
+                              <tr key={sub.id} className="hover:bg-slate-50/60 transition-colors">
+                                <td className="py-3 px-4 text-center font-bold text-slate-400">{idx + 1}</td>
+                                <td className="py-3 px-4 font-semibold text-slate-800">{sub.subject}</td>
+                                <td className="py-3 px-4 text-center">
+                                  <span className={`px-2.5 py-0.5 rounded-md font-extrabold text-xs inline-block ${
+                                    sub.grade === 'A' ? 'bg-emerald-100 text-emerald-800' :
+                                    sub.grade === 'B' ? 'bg-blue-100 text-blue-800' :
+                                    sub.grade === 'C' ? 'bg-amber-100 text-amber-800' :
+                                    sub.grade === 'S' ? 'bg-violet-100 text-violet-800' :
+                                    'bg-rose-100 text-rose-800'
+                                  }`}>
+                                    {sub.grade}
+                                  </span>
+                                </td>
+                                <td className="py-3 px-4 text-center">
+                                  <button
+                                    type="button"
+                                    onClick={() => handleRemoveOLSubject(sub.id)}
+                                    className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                  </button>
+                                </td>
+                              </tr>
+                            ))
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+
+                  {/* Section 2: G.C.E. A/L Results */}
+                  <div className="bg-slate-50/70 rounded-[2rem] p-8 border border-slate-100 space-y-6">
+                    <div className="flex items-center justify-between border-b border-slate-200/60 pb-4">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2.5 bg-indigo-100 text-indigo-700 rounded-xl font-black text-xs uppercase tracking-wider">
+                          Part 2
+                        </div>
+                        <div>
+                          <h3 className="text-lg font-bold text-slate-800">2. G.C.E. Advanced Level (A/L) Results</h3>
+                          <p className="text-xs text-slate-500">Stream selection, year, Z-score, and subject grades table</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                      <div>
+                        <label className="text-xs font-bold text-slate-700 ml-1">Stream</label>
+                        <select
+                          name="alStream"
+                          value={formData.alStream}
+                          onChange={handleInputChange}
+                          className="w-full px-4 py-3 mt-1 bg-white border border-slate-200 rounded-xl text-sm font-semibold focus:border-brand-500 outline-none cursor-pointer"
+                        >
+                          <option value="Physical Science">Physical Science (Maths)</option>
+                          <option value="Biological Science">Biological Science</option>
+                          <option value="Commerce">Commerce</option>
+                          <option value="Arts">Arts</option>
+                          <option value="Engineering Technology">Engineering Technology</option>
+                          <option value="Bio Systems Technology">Bio Systems Technology</option>
+                          <option value="Information Technology">Information Technology</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="text-xs font-bold text-slate-700 ml-1">Examination Year</label>
+                        <input
+                          type="number"
+                          name="alYear"
+                          value={formData.alYear}
+                          onChange={handleInputChange}
+                          placeholder="e.g. 2021"
+                          className="w-full px-4 py-3 mt-1 bg-white border border-slate-200 rounded-xl text-sm font-semibold focus:border-brand-500 outline-none"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-xs font-bold text-slate-700 ml-1">Index Number</label>
+                        <input
+                          type="text"
+                          name="alIndexNumber"
+                          value={formData.alIndexNumber}
+                          onChange={handleInputChange}
+                          placeholder="e.g. 21234567"
+                          className="w-full px-4 py-3 mt-1 bg-white border border-slate-200 rounded-xl text-sm font-semibold focus:border-brand-500 outline-none"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-xs font-bold text-slate-700 ml-1">Z-Score (Optional)</label>
+                        <input
+                          type="text"
+                          name="alZScore"
+                          value={formData.alZScore}
+                          onChange={handleInputChange}
+                          placeholder="e.g. 1.7645"
+                          className="w-full px-4 py-3 mt-1 bg-white border border-slate-200 rounded-xl text-sm font-semibold focus:border-brand-500 outline-none"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Add A/L Subject Row */}
+                    <div className="p-4 bg-white rounded-2xl border border-slate-200/80 space-y-3">
+                      <label className="text-xs font-bold text-slate-700">Select A/L Subject & Grade</label>
+                      <div className="flex flex-col sm:flex-row gap-3">
+                        <select
+                          value={newALSubjectSelect}
+                          onChange={(e) => {
+                            setNewALSubjectSelect(e.target.value);
+                            if (e.target.value !== "Other") {
+                              setNewALSubjectCustom("");
+                            }
+                          }}
+                          className="flex-1 px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold focus:border-brand-500 outline-none cursor-pointer"
+                        >
+                          <option value="">Select Main A/L Subject...</option>
+                          {MAIN_AL_SUBJECTS.map((sub) => (
+                            <option key={sub} value={sub === "Other (Type Custom Subject)" ? "Other" : sub}>
+                              {sub}
+                            </option>
+                          ))}
+                        </select>
+
+                        {newALSubjectSelect === "Other" && (
+                          <input
+                            type="text"
+                            value={newALSubjectCustom}
+                            onChange={(e) => setNewALSubjectCustom(e.target.value)}
+                            placeholder="Type custom A/L subject..."
+                            className="flex-1 px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold focus:border-brand-500 outline-none"
+                          />
+                        )}
+
+                        <select
+                          value={newALGrade}
+                          onChange={(e) => setNewALGrade(e.target.value)}
+                          className="w-28 px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold focus:border-brand-500 outline-none cursor-pointer"
+                        >
+                          <option value="A">Grade A</option>
+                          <option value="B">Grade B</option>
+                          <option value="C">Grade C</option>
+                          <option value="S">Grade S</option>
+                          <option value="F">Grade F</option>
+                        </select>
+                        <button
+                          type="button"
+                          onClick={handleAddALSubject}
+                          className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl shadow-sm transition-all flex items-center gap-1.5 justify-center cursor-pointer shrink-0"
+                        >
+                          <Plus className="w-4 h-4" /> Add Subject
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* A/L Subjects Table */}
+                    <div className="overflow-hidden bg-white rounded-2xl border border-slate-200/80 shadow-2xs">
+                      <table className="w-full text-left text-xs">
+                        <thead className="bg-slate-100/70 text-slate-700 font-bold uppercase border-b border-slate-200">
+                          <tr>
+                            <th className="py-3 px-4 w-12 text-center">#</th>
+                            <th className="py-3 px-4">A/L Subject Name</th>
+                            <th className="py-3 px-4 w-28 text-center">Result Grade</th>
+                            <th className="py-3 px-4 w-20 text-center">Action</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100">
+                          {formData.alSubjects.length === 0 ? (
+                            <tr>
+                              <td colSpan={4} className="py-6 text-center text-slate-400 font-medium italic">
+                                No A/L subjects added yet. Use the input bar above to add A/L subjects.
+                              </td>
+                            </tr>
+                          ) : (
+                            formData.alSubjects.map((sub, idx) => (
+                              <tr key={sub.id} className="hover:bg-slate-50/60 transition-colors">
+                                <td className="py-3 px-4 text-center font-bold text-slate-400">{idx + 1}</td>
+                                <td className="py-3 px-4 font-semibold text-slate-800">{sub.subject}</td>
+                                <td className="py-3 px-4 text-center">
+                                  <span className={`px-2.5 py-0.5 rounded-md font-extrabold text-xs inline-block ${
+                                    sub.grade === 'A' ? 'bg-emerald-100 text-emerald-800' :
+                                    sub.grade === 'B' ? 'bg-blue-100 text-blue-800' :
+                                    sub.grade === 'C' ? 'bg-amber-100 text-amber-800' :
+                                    sub.grade === 'S' ? 'bg-violet-100 text-violet-800' :
+                                    'bg-rose-100 text-rose-800'
+                                  }`}>
+                                    {sub.grade}
+                                  </span>
+                                </td>
+                                <td className="py-3 px-4 text-center">
+                                  <button
+                                    type="button"
+                                    onClick={() => handleRemoveALSubject(sub.id)}
+                                    className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                  </button>
+                                </td>
+                              </tr>
+                            ))
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+
+                  {/* Section 3: Other Qualifications */}
+                  <div className="bg-slate-50/70 rounded-[2rem] p-8 border border-slate-100 space-y-6">
+                    <div className="flex items-center justify-between border-b border-slate-200/60 pb-4">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2.5 bg-emerald-100 text-emerald-700 rounded-xl font-black text-xs uppercase tracking-wider">
+                          Part 3
+                        </div>
+                        <div>
+                          <h3 className="text-lg font-bold text-slate-800">3. Higher Education & Other Qualifications</h3>
+                          <p className="text-xs text-slate-500">Diplomas, Degrees, NVQ levels, Professional Certificates</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Add Other Qualification Row */}
+                    <div className="p-5 bg-white rounded-2xl border border-slate-200/80 space-y-4">
+                      <label className="text-xs font-bold text-slate-700 block">Add New Qualification Details</label>
+                      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                        <input
+                          type="text"
+                          value={newOtherTitle}
+                          onChange={(e) => setNewOtherTitle(e.target.value)}
+                          placeholder="Qualification Title (e.g. Diploma in IT)"
+                          className="px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold focus:border-brand-500 outline-none"
+                        />
+                        <input
+                          type="text"
+                          value={newOtherInstitute}
+                          onChange={(e) => setNewOtherInstitute(e.target.value)}
+                          placeholder="Institute / University"
+                          className="px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold focus:border-brand-500 outline-none"
+                        />
+                        <input
+                          type="text"
+                          value={newOtherYear}
+                          onChange={(e) => setNewOtherYear(e.target.value)}
+                          placeholder="Year (e.g. 2023)"
+                          className="px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold focus:border-brand-500 outline-none"
+                        />
+                        <input
+                          type="text"
+                          value={newOtherResult}
+                          onChange={(e) => setNewOtherResult(e.target.value)}
+                          placeholder="Result / Grade / Pass"
+                          className="px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold focus:border-brand-500 outline-none"
+                        />
+                      </div>
+                      <div className="flex justify-end">
+                        <button
+                          type="button"
+                          onClick={handleAddOtherQualification}
+                          className="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-sm transition-all flex items-center gap-1.5 cursor-pointer"
+                        >
+                          <Plus className="w-4 h-4" /> Add Qualification Record
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Other Qualifications Table */}
+                    <div className="overflow-hidden bg-white rounded-2xl border border-slate-200/80 shadow-2xs">
+                      <table className="w-full text-left text-xs">
+                        <thead className="bg-slate-100/70 text-slate-700 font-bold uppercase border-b border-slate-200">
+                          <tr>
+                            <th className="py-3 px-4 w-12 text-center">#</th>
+                            <th className="py-3 px-4">Qualification Title</th>
+                            <th className="py-3 px-4">Institute / Awarding Body</th>
+                            <th className="py-3 px-4 w-24 text-center">Year</th>
+                            <th className="py-3 px-4 w-28 text-center">Result / Status</th>
+                            <th className="py-3 px-4 w-20 text-center">Action</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100">
+                          {formData.otherQualifications.length === 0 ? (
+                            <tr>
+                              <td colSpan={6} className="py-6 text-center text-slate-400 font-medium italic">
+                                No other higher qualifications added yet. Enter details above if applicable.
+                              </td>
+                            </tr>
+                          ) : (
+                            formData.otherQualifications.map((q, idx) => (
+                              <tr key={q.id} className="hover:bg-slate-50/60 transition-colors">
+                                <td className="py-3 px-4 text-center font-bold text-slate-400">{idx + 1}</td>
+                                <td className="py-3 px-4 font-bold text-slate-800">{q.title}</td>
+                                <td className="py-3 px-4 font-medium text-slate-600">{q.institute}</td>
+                                <td className="py-3 px-4 text-center font-semibold text-slate-700">{q.year}</td>
+                                <td className="py-3 px-4 text-center">
+                                  <span className="px-2.5 py-0.5 rounded-md font-bold text-xs bg-slate-100 text-slate-800 inline-block border border-slate-200">
+                                    {q.result}
+                                  </span>
+                                </td>
+                                <td className="py-3 px-4 text-center">
+                                  <button
+                                    type="button"
+                                    onClick={() => handleRemoveOtherQualification(q.id)}
+                                    className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                  </button>
+                                </td>
+                              </tr>
+                            ))
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Step 6: Additional Details */}
+              {currentStep === 6 && (
                 <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-500">
                   <div className="flex items-center gap-4 py-4 border-b border-slate-50">
                     <div className="w-12 h-12 rounded-2xl bg-blue-50 flex items-center justify-center text-blue-600">
@@ -757,63 +1456,213 @@ const StudentEnrollment = () => {
                 </div>
               )}
 
-              {/* Step 6: Documents */}
-              {currentStep === 6 && (
+              {/* Step 7: Documents */}
+              {currentStep === 7 && (
                 <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
                   <div className="flex items-center gap-4 py-4 border-b border-slate-50">
                     <div className="w-12 h-12 rounded-2xl bg-emerald-50 flex items-center justify-center text-emerald-600">
                       <Upload className="w-6 h-6" />
                     </div>
                     <div>
-                      <h2 className="text-xl font-bold text-slate-800">Support Documents</h2>
-                      <p className="text-sm text-slate-500">Scanned copies of required certificates</p>
+                      <h2 className="text-xl font-bold text-slate-800">Support Documents & Qualification Certificates</h2>
+                      <p className="text-sm text-slate-500">Upload scanned PDF or Image copies of O/L, A/L, Higher Education certificates and supporting IDs</p>
                     </div>
                   </div>
 
-                  <div
-                    onClick={() => fileInputRef.current?.click()}
-                    className="border-4 border-dashed border-slate-100 bg-slate-50 rounded-[2.5rem] p-16 text-center hover:border-brand-400 cursor-pointer transition-all"
-                  >
-                    <input
-                      type="file"
-                      multiple
-                      accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png"
-                      className="hidden"
-                      ref={fileInputRef}
-                      onChange={handleFileChange}
-                    />
-                    <div className="max-w-xs mx-auto space-y-4">
-                      <div className="w-20 h-20 bg-white rounded-[2rem] mx-auto flex items-center justify-center text-slate-400 shadow-xl shadow-slate-200">
-                        <Upload className="w-10 h-10" />
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* Slot 1: O/L Certificate */}
+                    <div className="bg-slate-50/70 p-6 rounded-3xl border border-slate-200/80 space-y-4">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className="p-3 bg-blue-100 text-blue-700 rounded-2xl">
+                            <Award className="w-5 h-5" />
+                          </div>
+                          <div>
+                            <h3 className="font-bold text-slate-800 text-sm">G.C.E. O/L Certificate</h3>
+                            <p className="text-xs text-slate-500">Official Ordinary Level Results Sheet</p>
+                          </div>
+                        </div>
+                        {olCertificate && (
+                          <span className="px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 text-xs font-bold">Uploaded</span>
+                        )}
                       </div>
-                      <h3 className="text-lg font-black text-slate-800">Upload documents</h3>
-                      <p className="text-sm text-slate-500 font-bold uppercase tracking-widest text-[10px]">PDF, JPG, PNG (MAX 5MB)</p>
-                    </div>
-                  </div>
 
-                  {/* File List */}
-                  {formData.documents.length > 0 && (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {formData.documents.map((doc, idx) => (
-                        <div key={idx} className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-100">
-                          <div className="flex items-center gap-4">
-                            <FileText className="w-6 h-6 text-brand-600" />
-                            <div>
-                              <p className="text-sm font-bold text-slate-800 truncate max-w-[200px]">{doc.name}</p>
-                              <p className="text-[10px] text-slate-400">{(doc.size / 1024 / 1024).toFixed(2)} MB</p>
-                            </div>
+                      {olCertificate ? (
+                        <div className="flex items-center justify-between p-3.5 bg-white rounded-2xl border border-slate-200 text-xs">
+                          <div className="flex items-center gap-2.5 truncate">
+                            <FileText className="w-4 h-4 text-blue-600 shrink-0" />
+                            <span className="font-bold text-slate-700 truncate">{olCertificate.name}</span>
                           </div>
                           <button
                             type="button"
-                            onClick={(e) => { e.stopPropagation(); removeFile(idx); }}
-                            className="p-2 text-slate-300 hover:text-red-500 transition-all font-bold"
+                            onClick={() => setOlCertificate(null)}
+                            className="p-1 text-slate-400 hover:text-rose-600 transition-colors"
                           >
                             <X className="w-4 h-4" />
                           </button>
                         </div>
-                      ))}
+                      ) : (
+                        <label className="flex items-center justify-center gap-2 p-4 bg-white border-2 border-dashed border-slate-200 rounded-2xl hover:border-blue-500 cursor-pointer transition-all text-xs font-bold text-slate-600">
+                          <Upload className="w-4 h-4 text-blue-600" />
+                          <span>Choose O/L Certificate File</span>
+                          <input
+                            type="file"
+                            accept=".pdf,.jpg,.jpeg,.png"
+                            className="hidden"
+                            onChange={(e) => {
+                              if (e.target.files?.[0]) setOlCertificate(e.target.files[0]);
+                            }}
+                          />
+                        </label>
+                      )}
                     </div>
-                  )}
+
+                    {/* Slot 2: A/L Certificate */}
+                    <div className="bg-slate-50/70 p-6 rounded-3xl border border-slate-200/80 space-y-4">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className="p-3 bg-indigo-100 text-indigo-700 rounded-2xl">
+                            <Award className="w-5 h-5" />
+                          </div>
+                          <div>
+                            <h3 className="font-bold text-slate-800 text-sm">G.C.E. A/L Certificate</h3>
+                            <p className="text-xs text-slate-500">Official Advanced Level Results Sheet</p>
+                          </div>
+                        </div>
+                        {alCertificate && (
+                          <span className="px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 text-xs font-bold">Uploaded</span>
+                        )}
+                      </div>
+
+                      {alCertificate ? (
+                        <div className="flex items-center justify-between p-3.5 bg-white rounded-2xl border border-slate-200 text-xs">
+                          <div className="flex items-center gap-2.5 truncate">
+                            <FileText className="w-4 h-4 text-indigo-600 shrink-0" />
+                            <span className="font-bold text-slate-700 truncate">{alCertificate.name}</span>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => setAlCertificate(null)}
+                            className="p-1 text-slate-400 hover:text-rose-600 transition-colors"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        </div>
+                      ) : (
+                        <label className="flex items-center justify-center gap-2 p-4 bg-white border-2 border-dashed border-slate-200 rounded-2xl hover:border-indigo-500 cursor-pointer transition-all text-xs font-bold text-slate-600">
+                          <Upload className="w-4 h-4 text-indigo-600" />
+                          <span>Choose A/L Certificate File</span>
+                          <input
+                            type="file"
+                            accept=".pdf,.jpg,.jpeg,.png"
+                            className="hidden"
+                            onChange={(e) => {
+                              if (e.target.files?.[0]) setAlCertificate(e.target.files[0]);
+                            }}
+                          />
+                        </label>
+                      )}
+                    </div>
+
+                    {/* Slot 3: Higher Qualification Certificate */}
+                    <div className="bg-slate-50/70 p-6 rounded-3xl border border-slate-200/80 space-y-4">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className="p-3 bg-amber-100 text-amber-700 rounded-2xl">
+                            <GraduationCap className="w-5 h-5" />
+                          </div>
+                          <div>
+                            <h3 className="font-bold text-slate-800 text-sm">Higher Qualification Certificate</h3>
+                            <p className="text-xs text-slate-500">Degree, Diploma, or NVQ Certification</p>
+                          </div>
+                        </div>
+                        {higherCertificate && (
+                          <span className="px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 text-xs font-bold">Uploaded</span>
+                        )}
+                      </div>
+
+                      {higherCertificate ? (
+                        <div className="flex items-center justify-between p-3.5 bg-white rounded-2xl border border-slate-200 text-xs">
+                          <div className="flex items-center gap-2.5 truncate">
+                            <FileText className="w-4 h-4 text-amber-600 shrink-0" />
+                            <span className="font-bold text-slate-700 truncate">{higherCertificate.name}</span>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => setHigherCertificate(null)}
+                            className="p-1 text-slate-400 hover:text-rose-600 transition-colors"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        </div>
+                      ) : (
+                        <label className="flex items-center justify-center gap-2 p-4 bg-white border-2 border-dashed border-slate-200 rounded-2xl hover:border-amber-500 cursor-pointer transition-all text-xs font-bold text-slate-600">
+                          <Upload className="w-4 h-4 text-amber-600" />
+                          <span>Choose Higher Cert File</span>
+                          <input
+                            type="file"
+                            accept=".pdf,.jpg,.jpeg,.png"
+                            className="hidden"
+                            onChange={(e) => {
+                              if (e.target.files?.[0]) setHigherCertificate(e.target.files[0]);
+                            }}
+                          />
+                        </label>
+                      )}
+                    </div>
+
+                    {/* Slot 4: Other Support Documents */}
+                    <div className="bg-slate-50/70 p-6 rounded-3xl border border-slate-200/80 space-y-4">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className="p-3 bg-emerald-100 text-emerald-700 rounded-2xl">
+                            <FileText className="w-5 h-5" />
+                          </div>
+                          <div>
+                            <h3 className="font-bold text-slate-800 text-sm">Other Support Documents</h3>
+                            <p className="text-xs text-slate-500">NIC, Passport, Service Letter, etc.</p>
+                          </div>
+                        </div>
+                        {otherDocuments.length > 0 && (
+                          <span className="px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 text-xs font-bold">{otherDocuments.length} File(s)</span>
+                        )}
+                      </div>
+
+                      <label className="flex items-center justify-center gap-2 p-4 bg-white border-2 border-dashed border-slate-200 rounded-2xl hover:border-emerald-500 cursor-pointer transition-all text-xs font-bold text-slate-600">
+                        <Upload className="w-4 h-4 text-emerald-600" />
+                        <span>Add Other Files</span>
+                        <input
+                          type="file"
+                          multiple
+                          accept=".pdf,.jpg,.jpeg,.png"
+                          className="hidden"
+                          onChange={(e) => {
+                            if (e.target.files?.length) {
+                              const newFiles = Array.from(e.target.files);
+                              setOtherDocuments((prev) => [...prev, ...newFiles]);
+                            }
+                          }}
+                        />
+                      </label>
+
+                      {otherDocuments.length > 0 && (
+                        <div className="space-y-2 max-h-32 overflow-y-auto">
+                          {otherDocuments.map((doc, idx) => (
+                            <div key={idx} className="flex items-center justify-between p-2.5 bg-white rounded-xl border border-slate-200 text-xs">
+                              <span className="font-semibold text-slate-700 truncate pr-2">{doc.name}</span>
+                              <button
+                                type="button"
+                                onClick={() => setOtherDocuments((prev) => prev.filter((_, i) => i !== idx))}
+                                className="p-1 text-slate-400 hover:text-rose-600"
+                              >
+                                <X className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
                 </div>
               )}
             </div>
@@ -844,7 +1693,7 @@ const StudentEnrollment = () => {
               </div>
 
               <div className="flex gap-4">
-                {currentStep < 6 ? (
+                {currentStep > 1 && currentStep < 7 && (
                   <button
                     type="button"
                     onClick={handleNext}
@@ -853,7 +1702,8 @@ const StudentEnrollment = () => {
                     Continue
                     <ChevronRight className="w-5 h-5" />
                   </button>
-                ) : (
+                )}
+                {currentStep === 7 && (
                   <button
                     type="submit"
                     disabled={loading}

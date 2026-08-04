@@ -118,20 +118,36 @@ export default function RegistrationList() {
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-3 gap-4">
-          {[
-            { label: "Total Registered", count: students.length, color: "blue", icon: <ClipboardCheck className="w-5 h-5" /> },
-            { label: "This Year", count: students.filter((s) => new Date(s.enrollmentDate).getFullYear() === new Date().getFullYear()).length, color: "indigo", icon: <Calendar className="w-5 h-5" /> },
-            { label: "Certificates Issued", count: students.length, color: "emerald", icon: <Award className="w-5 h-5" /> },
-          ].map(({ label, count, color, icon }) => (
-            <div key={label} className={`bg-white rounded-2xl border border-${color}-100 shadow-sm p-5 flex items-center gap-4`}>
-              <div className={`p-3 rounded-xl bg-${color}-100 text-${color}-600`}>{icon}</div>
-              <div>
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{label}</p>
-                <p className={`text-2xl font-black text-${color}-600`}>{count}</p>
-              </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="bg-white rounded-2xl border border-blue-100 shadow-sm p-5 flex items-center gap-4">
+            <div className="p-3 rounded-xl bg-blue-50 text-blue-600">
+              <ClipboardCheck className="w-5 h-5" />
             </div>
-          ))}
+            <div>
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Total Registered</p>
+              <p className="text-2xl font-black text-blue-600 leading-tight">{students.length}</p>
+            </div>
+          </div>
+          <div className="bg-white rounded-2xl border border-indigo-100 shadow-sm p-5 flex items-center gap-4">
+            <div className="p-3 rounded-xl bg-indigo-50 text-indigo-600">
+              <Calendar className="w-5 h-5" />
+            </div>
+            <div>
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">This Year</p>
+              <p className="text-2xl font-black text-indigo-600 leading-tight">
+                {students.filter((s) => new Date(s.enrollmentDate).getFullYear() === new Date().getFullYear()).length}
+              </p>
+            </div>
+          </div>
+          <div className="bg-white rounded-2xl border border-emerald-100 shadow-sm p-5 flex items-center gap-4">
+            <div className="p-3 rounded-xl bg-emerald-50 text-emerald-600">
+              <Award className="w-5 h-5" />
+            </div>
+            <div>
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Certificates Issued</p>
+              <p className="text-2xl font-black text-emerald-600 leading-tight">{students.length}</p>
+            </div>
+          </div>
         </div>
 
         {/* Table */}

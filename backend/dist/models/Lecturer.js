@@ -61,6 +61,31 @@ Lecturer.init({
         type: db_1.DataTypes.STRING,
         allowNull: false,
     },
+    qualifications: {
+        type: db_1.DataTypes.TEXT,
+        allowNull: true,
+    },
+    category: {
+        type: db_1.DataTypes.ENUM('SLPA', 'Outside'),
+        defaultValue: 'SLPA',
+        allowNull: false,
+    },
+    epfNumber: {
+        type: db_1.DataTypes.STRING,
+        allowNull: true,
+    },
+    department: {
+        type: db_1.DataTypes.STRING,
+        allowNull: true,
+    },
+    companyName: {
+        type: db_1.DataTypes.STRING,
+        allowNull: true,
+    },
+    designation: {
+        type: db_1.DataTypes.STRING,
+        allowNull: true,
+    },
     status: {
         type: db_1.DataTypes.ENUM('Active', 'Inactive'),
         defaultValue: 'Active',

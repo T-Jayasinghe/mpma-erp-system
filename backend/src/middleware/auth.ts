@@ -19,14 +19,16 @@ export const protect = (req: AuthRequest, res: Response, next: NextFunction): vo
       const decoded = jwt.verify(token, JWT_SECRET) as { id: string, role: string };
       
       req.user = decoded;
-      next();
+      return next();
     } catch (error) {
       res.status(401).json({ message: 'Not authorized, token failed' });
+      return;
     }
   }
 
   if (!token) {
     res.status(401).json({ message: 'Not authorized, no token' });
+    return;
   }
 };
 

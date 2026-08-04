@@ -14,10 +14,16 @@ export interface LecturerAttributes {
   branchName: string;
   accountHolderName: string;
   accountNumber: string;
+  qualifications?: string;
+  category?: 'SLPA' | 'Outside';
+  epfNumber?: string | null;
+  department?: string | null;
+  companyName?: string | null;
+  designation?: string | null;
   status: 'Active' | 'Inactive';
 }
 
-interface LecturerCreationAttributes extends Optional<LecturerAttributes, 'id' | 'status'> {}
+interface LecturerCreationAttributes extends Optional<LecturerAttributes, 'id' | 'status' | 'category'> {}
 
 export class Lecturer extends Model<LecturerAttributes, LecturerCreationAttributes> implements LecturerAttributes {
   public id!: string;
@@ -33,6 +39,12 @@ export class Lecturer extends Model<LecturerAttributes, LecturerCreationAttribut
   public branchName!: string;
   public accountHolderName!: string;
   public accountNumber!: string;
+  public qualifications?: string;
+  public category?: 'SLPA' | 'Outside';
+  public epfNumber?: string | null;
+  public department?: string | null;
+  public companyName?: string | null;
+  public designation?: string | null;
   public status!: 'Active' | 'Inactive';
 
   public readonly createdAt!: Date;
@@ -95,6 +107,31 @@ Lecturer.init(
     accountNumber: {
       type: DataTypes.STRING,
       allowNull: false,
+    },
+    qualifications: {
+      type: DataTypes.TEXT,
+      allowNull: true,
+    },
+    category: {
+      type: DataTypes.ENUM('SLPA', 'Outside'),
+      defaultValue: 'SLPA',
+      allowNull: false,
+    },
+    epfNumber: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    department: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    companyName: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    designation: {
+      type: DataTypes.STRING,
+      allowNull: true,
     },
     status: {
       type: DataTypes.ENUM('Active', 'Inactive'),

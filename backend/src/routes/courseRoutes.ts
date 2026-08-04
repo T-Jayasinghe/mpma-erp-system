@@ -4,7 +4,10 @@ import {
   getCourseById, 
   createCourse, 
   updateCourse, 
-  toggleCourseStatus 
+  toggleCourseStatus,
+  getCourseLecturers,
+  assignLecturerToCourse,
+  removeLecturerFromCourse,
 } from '../controllers/courseController';
 import { protect } from '../middleware/auth';
 
@@ -16,6 +19,13 @@ router.use(protect);
 router.route('/')
   .get(getCourses)
   .post(createCourse);
+
+router.route('/:id/lecturers')
+  .get(getCourseLecturers)
+  .post(assignLecturerToCourse);
+
+router.route('/:id/lecturers/:lecturerId')
+  .delete(removeLecturerFromCourse);
 
 router.route('/:id')
   .get(getCourseById)

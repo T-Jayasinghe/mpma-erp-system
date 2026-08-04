@@ -56,6 +56,21 @@ Course.init({
         type: db_1.DataTypes.ENUM('Active', 'Inactive'),
         defaultValue: 'Active',
     },
+    schedule: {
+        type: db_1.DataTypes.ENUM('Weekday', 'Weekend'),
+        allowNull: true,
+        defaultValue: 'Weekday',
+    },
+    type: {
+        type: db_1.DataTypes.ENUM('Full Time', 'Part Time'),
+        allowNull: true,
+        defaultValue: 'Full Time',
+    },
+    mode: {
+        type: db_1.DataTypes.ENUM('Online', 'Physical', 'Hybrid'),
+        allowNull: true,
+        defaultValue: 'Physical',
+    },
 }, {
     sequelize: db_1.sequelize,
     tableName: 'courses',

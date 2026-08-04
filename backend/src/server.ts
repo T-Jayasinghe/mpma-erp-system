@@ -26,6 +26,7 @@ import { setupAssociations } from './models/associations';
 import publicCourseRoutes from './routes/publicCourseRoutes';
 import publicApplicationRoutes from './routes/publicApplicationRoutes';
 import './models/SlpaEmployee';
+import './models/CourseLecturer';
 
 // Set up model relationships
 setupAssociations();

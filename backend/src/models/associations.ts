@@ -11,6 +11,7 @@ import StudentPayment from './StudentPayment';
 import Student from './Student';
 import ApplicationDocument from './ApplicationDocument';
 import VerificationChecklist from './VerificationChecklist';
+import CourseLecturer from './CourseLecturer';
 
 
 export const setupAssociations = () => {
@@ -29,6 +30,17 @@ export const setupAssociations = () => {
   // Course & Batch associations
   Course.hasMany(Batch, { foreignKey: 'courseId', as: 'batches' });
   Batch.belongsTo(Course, { foreignKey: 'courseId', as: 'course' });
+
+  // Course & Lecturer many-to-many associations
+  Course.belongsToMany(Lecturer, { through: CourseLecturer, foreignKey: 'courseId', otherKey: 'lecturerId', as: 'lecturers' });
+  Lecturer.belongsToMany(Course, { through: CourseLecturer, foreignKey: 'lecturerId', otherKey: 'courseId', as: 'courses' });
+
+  // Direct associations for junction query convenience
+  Course.hasMany(CourseLecturer, { foreignKey: 'courseId', as: 'courseLecturerAssignments' });
+  CourseLecturer.belongsTo(Course, { foreignKey: 'courseId', as: 'course' });
+
+  Lecturer.hasMany(CourseLecturer, { foreignKey: 'lecturerId', as: 'courseLecturerAssignments' });
+  CourseLecturer.belongsTo(Lecturer, { foreignKey: 'lecturerId', as: 'lecturer' });
 
   // Batch & Lecturer many-to-many associations
   Batch.belongsToMany(Lecturer, { through: BatchLecturer, foreignKey: 'batchId', otherKey: 'lecturerId', as: 'lecturers' });

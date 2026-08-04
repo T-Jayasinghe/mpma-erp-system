@@ -42,6 +42,9 @@ const mpmaCourses = [
   registrationFee: 0,
   courseFee: 0,
   status: 'Active' as const,
+  schedule: 'Weekday' as const,
+  type: 'Full Time' as const,
+  mode: 'Physical' as const,
 }));
 
 const seedMpmaCourses = async () => {
