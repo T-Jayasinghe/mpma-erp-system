@@ -45,6 +45,9 @@ export interface StudentRecord {
   department?: string | null;
   slpa_position?: string | null;
   documents?: Array<{ id: number; document_type: string; file_name: string; mime_type: string; uploaded_by_admin: boolean }>;
+  admin_notes?: string | null;
+  qualificationsData?: string | object | null;
+  qualifications?: string | object | null;
   enrollmentDate: string;
   status: StudentStatus;
   createdAt: string;

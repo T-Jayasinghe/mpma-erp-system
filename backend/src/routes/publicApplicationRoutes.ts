@@ -1,9 +1,10 @@
 import { Router } from 'express';
 import { applicationUpload } from '../middleware/applicationUpload';
-import { searchSlpaEmployee, submitPublicApplication } from '../controllers/publicApplicationController';
+import { searchSlpaEmployee, lookupStudentByNic, submitPublicApplication } from '../controllers/publicApplicationController';
 const router = Router();
 const requests = new Map<string, { count: number; reset: number }>();
 const limit = (req: any, res: any, next: any) => { const key = req.ip || 'unknown'; const now = Date.now(); const item = requests.get(key); if (!item || item.reset < now) requests.set(key, { count: 1, reset: now + 15 * 60_000 }); else if (++item.count > 30) return res.status(429).json({ success: false, message: 'Too many requests. Please try again later.' }); next(); };
 router.get('/slpa-employees/search', limit, searchSlpaEmployee);
+router.get('/students/lookup-nic', limit, lookupStudentByNic);
 router.post('/student-applications', limit, applicationUpload, submitPublicApplication);
 export default router;

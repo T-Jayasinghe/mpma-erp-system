@@ -12,6 +12,7 @@ export interface LecturerAttributes {
   emergencyContact: string;
   bankName: string;
   branchName: string;
+  centralBankCode?: string | null;
   accountHolderName: string;
   accountNumber: string;
   qualifications?: string;
@@ -21,6 +22,7 @@ export interface LecturerAttributes {
   companyName?: string | null;
   designation?: string | null;
   status: 'Active' | 'Inactive';
+  stream?: string | null;
 }
 
 interface LecturerCreationAttributes extends Optional<LecturerAttributes, 'id' | 'status' | 'category'> {}
@@ -37,6 +39,7 @@ export class Lecturer extends Model<LecturerAttributes, LecturerCreationAttribut
   public emergencyContact!: string;
   public bankName!: string;
   public branchName!: string;
+  public centralBankCode?: string | null;
   public accountHolderName!: string;
   public accountNumber!: string;
   public qualifications?: string;
@@ -46,6 +49,7 @@ export class Lecturer extends Model<LecturerAttributes, LecturerCreationAttribut
   public companyName?: string | null;
   public designation?: string | null;
   public status!: 'Active' | 'Inactive';
+  public stream?: string | null;
 
   public readonly createdAt!: Date;
   public readonly updatedAt!: Date;
@@ -100,6 +104,10 @@ Lecturer.init(
       type: DataTypes.STRING,
       allowNull: false,
     },
+    centralBankCode: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
     accountHolderName: {
       type: DataTypes.STRING,
       allowNull: false,
@@ -136,6 +144,10 @@ Lecturer.init(
     status: {
       type: DataTypes.ENUM('Active', 'Inactive'),
       defaultValue: 'Active',
+    },
+    stream: {
+      type: DataTypes.STRING,
+      allowNull: true,
     },
   },
   {

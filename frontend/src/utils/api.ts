@@ -22,16 +22,12 @@ export const fetchApi = async (endpoint: string, options: RequestInit = {}) => {
     headers: mergedHeaders,
   };
 
-  try {
-    const response = await fetch(url, config);
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.message || 'Something went wrong');
-    }
-    return await response.json();
-  } catch (error: any) {
-    throw error;
+  const response = await fetch(url, config);
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({ message: 'Something went wrong' }));
+    throw new Error(errorData.message || 'Something went wrong');
   }
+  return await response.json();
 };
 
 // Format a date string from YYYY-MM-DD to YYYY/MM/DD

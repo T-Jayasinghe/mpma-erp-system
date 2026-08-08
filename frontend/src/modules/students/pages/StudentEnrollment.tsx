@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import DashboardLayout from "../../../layouts/DashboardLayout";
 import {
@@ -25,8 +25,7 @@ import {
   Flag,
   Award,
   Plus,
-  Trash2,
-  BookOpen
+  Trash2
 } from "lucide-react";
 import { toast } from "react-toastify";
 import { fetchApi } from "../../../utils/api";
@@ -170,101 +169,99 @@ const StudentEnrollment = () => {
 
   const [employeeSearchId, setEmployeeSearchId] = useState("");
   const [isSearchingEmployee, setIsSearchingEmployee] = useState(false);
+  const [isLookingUpNic, setIsLookingUpNic] = useState(false);
+  const [autoFillSuccess, setAutoFillSuccess] = useState<string | null>(null);
   const [courses, setCourses] = useState<CourseOption[]>([]);
   const [batches, setBatches] = useState<BatchOption[]>([]);
   const [courseLoading, setCourseLoading] = useState(false);
   const [applicationNumber, setApplicationNumber] = useState("");
-
-  const handleAddOLSubject = () => {
-    const subjectName = newOLSubjectSelect === "Other" ? newOLSubjectCustom.trim() : newOLSubjectSelect.trim();
-    if (!subjectName) {
-      toast.warning("Please select or enter an O/L subject name");
-      return;
-    }
-    setFormData(prev => ({
-      ...prev,
-      olSubjects: [...prev.olSubjects, { id: `ol-${Date.now()}`, subject: subjectName, grade: newOLGrade }]
-    }));
-    setNewOLSubjectSelect("");
-    setNewOLSubjectCustom("");
-    setNewOLGrade("A");
-    toast.success(`O/L Subject "${subjectName}" added to table`);
-  };
-
-  const handleRemoveOLSubject = (id: string) => {
-    setFormData(prev => ({
-      ...prev,
-      olSubjects: prev.olSubjects.filter(sub => sub.id !== id)
-    }));
-  };
-
-  const handleAddALSubject = () => {
-    const subjectName = newALSubjectSelect === "Other" ? newALSubjectCustom.trim() : newALSubjectSelect.trim();
-    if (!subjectName) {
-      toast.warning("Please select or enter an A/L subject name");
-      return;
-    }
-    setFormData(prev => ({
-      ...prev,
-      alSubjects: [...prev.alSubjects, { id: `al-${Date.now()}`, subject: subjectName, grade: newALGrade }]
-    }));
-    setNewALSubjectSelect("");
-    setNewALSubjectCustom("");
-    setNewALGrade("A");
-    toast.success(`A/L Subject "${subjectName}" added to table`);
-  };
-
-  const handleRemoveALSubject = (id: string) => {
-    setFormData(prev => ({
-      ...prev,
-      alSubjects: prev.alSubjects.filter(sub => sub.id !== id)
-    }));
-  };
-
-  const handleAddOtherQualification = () => {
-    if (!newOtherTitle.trim()) {
-      toast.warning("Please enter qualification title");
-      return;
-    }
-    setFormData(prev => ({
-      ...prev,
-      otherQualifications: [
-        ...prev.otherQualifications,
-        {
-          id: `other-${Date.now()}`,
-          title: newOtherTitle.trim(),
-          institute: newOtherInstitute.trim() || "N/A",
-          year: newOtherYear.trim() || "N/A",
-          result: newOtherResult.trim() || "Pass"
-        }
-      ]
-    }));
-    setNewOtherTitle("");
-    setNewOtherInstitute("");
-    setNewOtherYear("");
-    setNewOtherResult("");
-    toast.success("Qualification record added to table");
-  };
-
-  const handleRemoveOtherQualification = (id: string) => {
-    setFormData(prev => ({
-      ...prev,
-      otherQualifications: prev.otherQualifications.filter(q => q.id !== id)
-    }));
-  };
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
-    setCourseLoading(true);
-    fetchApi('/public/courses').then((data) => setCourses(data as CourseOption[])).catch((e) => toast.error(e.message)).finally(() => setCourseLoading(false));
+    const loadCourses = async () => {
+      setCourseLoading(true);
+      try {
+        const data = await fetchApi('/courses') as CourseOption[];
+        if (Array.isArray(data)) {
+          setCourses(data);
+        }
+      } catch (err) {
+        console.error("Failed to load courses", err);
+      } finally {
+        setCourseLoading(false);
+      }
+    };
+    loadCourses();
   }, []);
 
   useEffect(() => {
-    if (!formData.courseId) { setBatches([]); return; }
-    setCourseLoading(true);
-    fetchApi(`/public/courses/${formData.courseId}/batches`).then((data) => setBatches(data as BatchOption[])).catch((e) => toast.error(e.message)).finally(() => setCourseLoading(false));
+    if (!formData.courseId) {
+      setBatches([]);
+      return;
+    }
+    const loadBatches = async () => {
+      setCourseLoading(true);
+      try {
+        const data = await fetchApi(`/batches?courseId=${formData.courseId}`) as BatchOption[];
+        if (Array.isArray(data)) {
+          setBatches(data);
+        }
+      } catch (err) {
+        console.error("Failed to load batches", err);
+      } finally {
+        setCourseLoading(false);
+      }
+    };
+    loadBatches();
   }, [formData.courseId]);
 
-  const [errors, setErrors] = useState<Record<string, string>>({});
+  const checkExistingStudentByNic = async (nicValue: string) => {
+    const trimmed = nicValue.trim();
+    if (!trimmed || trimmed.length < 8) return;
+
+    setIsLookingUpNic(true);
+    try {
+      const res = await fetchApi(`/public/students/lookup-nic?nic=${encodeURIComponent(trimmed)}`) as {
+        success: boolean;
+        found: boolean;
+        source?: string;
+        student?: Record<string, string>;
+      };
+
+      if (res.found && res.student) {
+        const s = res.student;
+        setFormData(prev => ({
+          ...prev,
+          fullName: s.fullName || prev.fullName,
+          firstName: s.firstName || prev.firstName,
+          lastName: s.lastName || prev.lastName,
+          email: s.email || prev.email,
+          phone: s.phone || prev.phone,
+          address: s.address || prev.address,
+          dob: s.dob || prev.dob,
+          gender: s.gender || prev.gender,
+          nationality: s.nationality || prev.nationality,
+          countryOfOrigin: s.countryOfOrigin || prev.countryOfOrigin,
+          companyName: s.companyName || prev.companyName,
+          outsidePosition: s.outsidePosition || prev.outsidePosition,
+          serviceNumber: s.serviceNumber || prev.serviceNumber,
+          epfNumber: s.epfNumber || prev.epfNumber,
+          department: s.department || prev.department,
+          slpaPosition: s.slpaPosition || prev.slpaPosition,
+        }));
+
+        const sourceLabel = res.source === 'SLPA_EMPLOYEE_DATABASE' ? 'SLPA Employee Records' : 'Student Database';
+        setAutoFillSuccess(`Existing profile found in ${sourceLabel}. Personal & contact details auto-populated!`);
+        toast.success(`Existing profile found! Details auto-filled from ${sourceLabel}.`);
+      } else {
+        setAutoFillSuccess(null);
+      }
+    } catch (e) {
+      console.error("NIC lookup error:", e);
+    } finally {
+      setIsLookingUpNic(false);
+    }
+  };
 
   const steps = [
     { id: 1, title: "Student Category", icon: Users },
@@ -283,7 +280,7 @@ const StudentEnrollment = () => {
       const updated = { ...prev, [name]: value };
 
       // Auto-extract DOB and Gender if NIC number is entered/changed
-      if (name === "idNumber") {
+      if (name === "idNumber" || name === "passportNumber") {
         const nicInfo = parseSriLankanNIC(value);
         if (nicInfo) {
           updated.dob = nicInfo.dob;
@@ -293,6 +290,12 @@ const StudentEnrollment = () => {
 
       return updated;
     });
+
+    if (name === "idNumber" || name === "passportNumber") {
+      if (value.trim().length >= 9) {
+        checkExistingStudentByNic(value);
+      }
+    }
 
     if (errors[name]) {
       setErrors(prev => {
@@ -378,7 +381,7 @@ const StudentEnrollment = () => {
     }
     setIsSearchingEmployee(true);
     try {
-      const result = await fetchApi(`/public/slpa-employees/search?query=${encodeURIComponent(employeeSearchId.trim())}`) as { employee: any };
+      const result = await fetchApi(`/public/slpa-employees/search?query=${encodeURIComponent(employeeSearchId.trim())}`) as { employee: Record<string, string> };
       const employee = result.employee;
       setFormData(prev => ({
         ...prev,
@@ -387,9 +390,106 @@ const StudentEnrollment = () => {
         gender: employee.gender, serviceNumber: employee.serviceNumber, epfNumber: employee.epfNumber,
         department: employee.department, slpaPosition: employee.position,
       }));
-      toast.success("Employee record verified.");
     } catch (e) { toast.error(e instanceof Error ? e.message : 'Employee search failed'); }
     finally { setIsSearchingEmployee(false); }
+  };
+
+  const handleAddOLSubject = () => {
+    const subjectName = newOLSubjectSelect === "Other (Type Custom Subject)"
+      ? newOLSubjectCustom.trim()
+      : newOLSubjectSelect.trim();
+
+    if (!subjectName) {
+      toast.warning("Please select or enter an O/L subject name");
+      return;
+    }
+
+    const newItem = {
+      id: Date.now().toString() + Math.random().toString(36).substring(2, 6),
+      subject: subjectName,
+      grade: newOLGrade
+    };
+
+    setFormData(prev => ({
+      ...prev,
+      olSubjects: [...prev.olSubjects, newItem]
+    }));
+
+    setNewOLSubjectSelect("");
+    setNewOLSubjectCustom("");
+    setNewOLGrade("A");
+  };
+
+  const handleRemoveOLSubject = (id: string) => {
+    setFormData(prev => ({
+      ...prev,
+      olSubjects: prev.olSubjects.filter(item => item.id !== id)
+    }));
+  };
+
+  const handleAddALSubject = () => {
+    const subjectName = newALSubjectSelect === "Other (Type Custom Subject)"
+      ? newALSubjectCustom.trim()
+      : newALSubjectSelect.trim();
+
+    if (!subjectName) {
+      toast.warning("Please select or enter an A/L subject name");
+      return;
+    }
+
+    const newItem = {
+      id: Date.now().toString() + Math.random().toString(36).substring(2, 6),
+      subject: subjectName,
+      grade: newALGrade
+    };
+
+    setFormData(prev => ({
+      ...prev,
+      alSubjects: [...prev.alSubjects, newItem]
+    }));
+
+    setNewALSubjectSelect("");
+    setNewALSubjectCustom("");
+    setNewALGrade("A");
+  };
+
+  const handleRemoveALSubject = (id: string) => {
+    setFormData(prev => ({
+      ...prev,
+      alSubjects: prev.alSubjects.filter(item => item.id !== id)
+    }));
+  };
+
+  const handleAddOtherQualification = () => {
+    if (!newOtherTitle.trim()) {
+      toast.warning("Please enter a qualification title");
+      return;
+    }
+
+    const newItem = {
+      id: Date.now().toString() + Math.random().toString(36).substring(2, 6),
+      title: newOtherTitle.trim(),
+      institute: newOtherInstitute.trim(),
+      year: newOtherYear.trim(),
+      result: newOtherResult.trim()
+    };
+
+    setFormData(prev => ({
+      ...prev,
+      otherQualifications: [...prev.otherQualifications, newItem]
+    }));
+
+    setNewOtherTitle("");
+    setNewOtherInstitute("");
+    setNewOtherYear("");
+    setNewOtherResult("");
+  };
+
+  const handleRemoveOtherQualification = (id: string) => {
+    setFormData(prev => ({
+      ...prev,
+      otherQualifications: prev.otherQualifications.filter(item => item.id !== id)
+    }));
   };
 
   const handleSaveDraft = async () => {
@@ -489,26 +589,6 @@ const StudentEnrollment = () => {
     } finally {
       setLoading(false);
     }
-  };
-
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files) {
-      const allowed = new Set(['application/pdf', 'image/jpeg', 'image/png']);
-      const newFiles = Array.from(e.target.files).filter(file => {
-        if (!allowed.has(file.type) || file.size > 5 * 1024 * 1024) { toast.error(`${file.name}: use PDF/JPG/PNG up to 5 MB`); return false; }
-        return true;
-      });
-      setFormData(prev => ({ ...prev, documents: [...prev.documents, ...newFiles] }));
-    }
-  };
-
-  const removeFile = (index: number) => {
-    setFormData(prev => ({
-      ...prev,
-      documents: prev.documents.filter((_, i) => i !== index)
-    }));
   };
 
   return (
@@ -696,23 +776,27 @@ const StudentEnrollment = () => {
                       )}
                     </div>
                   ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                      <div className="md:col-span-2 space-y-2">
-                        <label className="text-sm font-bold text-slate-700 ml-1">Full Name (As per identification) <span className="text-red-500">*</span></label>
-                        <div className="relative">
-                          <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-                          <input
-                            name="fullName"
-                            value={formData.fullName}
-                            onChange={handleInputChange}
-                            className={`w-full pl-12 pr-4 py-4 bg-slate-50 border-2 border-transparent rounded-[1.25rem] text-sm font-semibold focus:bg-white focus:border-brand-500 outline-none transition-all ${errors.fullName ? 'border-red-400 bg-red-50/30' : ''}`}
-                            placeholder="Enter full name"
-                          />
+                    <div className="space-y-6">
+                      {autoFillSuccess && (
+                        <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-2xl flex items-center justify-between gap-4 animate-in fade-in duration-300">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-xl bg-emerald-500 text-white flex items-center justify-center font-bold shrink-0">
+                              <CheckCircle2 className="w-6 h-6" />
+                            </div>
+                            <div>
+                              <h4 className="font-bold text-emerald-900 text-sm">{autoFillSuccess}</h4>
+                              <p className="text-xs text-emerald-700 font-medium mt-0.5">Existing record details have been auto-filled into the form below.</p>
+                            </div>
+                          </div>
+                          <button type="button" onClick={() => setAutoFillSuccess(null)} className="text-emerald-500 hover:text-emerald-700">
+                            <X className="w-5 h-5" />
+                          </button>
                         </div>
-                        {errors.fullName && <p className="text-xs text-red-500 mt-1 ml-1 font-bold">{errors.fullName}</p>}
-                      </div>
+                      )}
 
-                      {formData.studentCategory === "Sri Lankan Student" ? (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        {/* 1. NIC Number / Passport FIRST */}
+                        {formData.studentCategory === "Sri Lankan Student" ? (
                           <div className="space-y-2">
                             <label className="text-sm font-bold text-slate-700 ml-1">NIC Number <span className="text-red-500">*</span></label>
                             <div className="relative">
@@ -721,9 +805,12 @@ const StudentEnrollment = () => {
                                 name="idNumber"
                                 value={formData.idNumber}
                                 onChange={handleInputChange}
-                                className={`w-full pl-12 pr-4 py-4 bg-slate-50 border-2 border-transparent rounded-[1.25rem] text-sm font-semibold focus:bg-white focus:border-brand-500 outline-none transition-all ${errors.idNumber ? 'border-red-400' : ''}`}
+                                className={`w-full pl-12 pr-12 py-4 bg-slate-50 border-2 border-transparent rounded-[1.25rem] text-sm font-semibold focus:bg-white focus:border-brand-500 outline-none transition-all ${errors.idNumber ? 'border-red-400' : ''}`}
                                 placeholder="eg: 199512345678 or 952341234V"
                               />
+                              {isLookingUpNic && (
+                                <Loader2 className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-brand-600 animate-spin" />
+                              )}
                             </div>
                             {parseSriLankanNIC(formData.idNumber) && (
                               <div className="p-2.5 bg-emerald-50 border border-emerald-200/80 rounded-xl text-xs font-semibold text-emerald-700 flex items-center justify-between animate-in fade-in duration-200 mt-1.5">
@@ -736,40 +823,57 @@ const StudentEnrollment = () => {
                                 </span>
                               </div>
                             )}
+                            <p className="text-[11px] font-medium text-slate-400 ml-1">Enter NIC to auto-complete existing profile or calculate DOB &amp; Gender.</p>
                             {errors.idNumber && <p className="text-xs text-red-500 mt-1 ml-1 font-bold">{errors.idNumber}</p>}
                           </div>
-                      ) : (
+                        ) : (
+                          <div className="space-y-2">
+                            <label className="text-sm font-bold text-slate-700 ml-1">Passport Number <span className="text-red-500">*</span></label>
+                            <div className="relative">
+                              <FileText className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                              <input
+                                name="passportNumber"
+                                value={formData.passportNumber}
+                                onChange={handleInputChange}
+                                className={`w-full pl-12 pr-4 py-4 bg-slate-50 border-2 border-transparent rounded-[1.25rem] text-sm font-semibold focus:bg-white focus:border-brand-500 outline-none transition-all ${errors.passportNumber ? 'border-red-400' : ''}`}
+                                placeholder="Enter passport number"
+                              />
+                            </div>
+                            {errors.passportNumber && <p className="text-xs text-red-500 mt-1 ml-1 font-bold">{errors.passportNumber}</p>}
+                          </div>
+                        )}
+
                         <div className="space-y-2">
-                          <label className="text-sm font-bold text-slate-700 ml-1">Passport Number <span className="text-red-500">*</span></label>
+                          <label className="text-sm font-bold text-slate-700 ml-1">
+                            Nationality {formData.studentCategory === "Non-Sri Lankan Student" && <span className="text-red-500">*</span>}
+                          </label>
                           <div className="relative">
-                            <FileText className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                            <Globe className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
                             <input
-                              name="passportNumber"
-                              value={formData.passportNumber}
+                              name="nationality"
+                              value={formData.nationality}
                               onChange={handleInputChange}
-                              className={`w-full pl-12 pr-4 py-4 bg-slate-50 border-2 border-transparent rounded-[1.25rem] text-sm font-semibold focus:bg-white focus:border-brand-500 outline-none transition-all ${errors.passportNumber ? 'border-red-400' : ''}`}
-                              placeholder="Enter passport number"
+                              className="w-full pl-12 pr-4 py-4 bg-slate-50 border-2 border-transparent rounded-[1.25rem] text-sm font-semibold focus:bg-white focus:border-brand-500 outline-none transition-all"
                             />
                           </div>
-                          {errors.passportNumber && <p className="text-xs text-red-500 mt-1 ml-1 font-bold">{errors.passportNumber}</p>}
+                          {errors.nationality && <p className="text-xs text-red-500 mt-1 ml-1 font-bold">{errors.nationality}</p>}
                         </div>
-                      )}
 
-                      <div className="space-y-2">
-                        <label className="text-sm font-bold text-slate-700 ml-1">
-                          Nationality {formData.studentCategory === "Non-Sri Lankan Student" && <span className="text-red-500">*</span>}
-                        </label>
-                        <div className="relative">
-                          <Globe className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-                          <input
-                            name="nationality"
-                            value={formData.nationality}
-                            onChange={handleInputChange}
-                            className="w-full pl-12 pr-4 py-4 bg-slate-50 border-2 border-transparent rounded-[1.25rem] text-sm font-semibold focus:bg-white focus:border-brand-500 outline-none transition-all"
-                          />
+                        {/* 2. Full Name (As per identification) SECOND */}
+                        <div className="md:col-span-2 space-y-2">
+                          <label className="text-sm font-bold text-slate-700 ml-1">Full Name (As per identification) <span className="text-red-500">*</span></label>
+                          <div className="relative">
+                            <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                            <input
+                              name="fullName"
+                              value={formData.fullName}
+                              onChange={handleInputChange}
+                              className={`w-full pl-12 pr-4 py-4 bg-slate-50 border-2 border-transparent rounded-[1.25rem] text-sm font-semibold focus:bg-white focus:border-brand-500 outline-none transition-all ${errors.fullName ? 'border-red-400 bg-red-50/30' : ''}`}
+                              placeholder="Enter full name"
+                            />
+                          </div>
+                          {errors.fullName && <p className="text-xs text-red-500 mt-1 ml-1 font-bold">{errors.fullName}</p>}
                         </div>
-                        {errors.nationality && <p className="text-xs text-red-500 mt-1 ml-1 font-bold">{errors.nationality}</p>}
-                      </div>
 
                       {formData.studentCategory === "Non-Sri Lankan Student" && (
                         <div className="space-y-2">
@@ -819,7 +923,8 @@ const StudentEnrollment = () => {
                         </div>
                       </div>
                     </div>
-                  )}
+                  </div>
+                )}
                 </div>
               )}
 
@@ -1415,7 +1520,7 @@ const StudentEnrollment = () => {
                           />
                         </div>
                         <div className="space-y-2">
-                          <label className="text-sm font-bold text-slate-700 ml-1">SLPA Department</label>
+                          <label className="text-sm font-bold text-slate-700 ml-1">SLPA Division</label>
                           <input
                             name="department"
                             value={formData.department}
@@ -1668,7 +1773,11 @@ const StudentEnrollment = () => {
             </div>
 
             {/* Action Bar */}
-            {applicationNumber && <div className="mx-10 mb-4 p-5 rounded-2xl bg-emerald-50 text-emerald-800 font-bold">Application submitted successfully. Application number: {applicationNumber}</div>}
+            {applicationNumber && (
+              <div className="mx-10 mb-4 p-5 rounded-2xl bg-emerald-50 text-emerald-800 font-bold">
+                Application submitted successfully. Application number: {applicationNumber}
+              </div>
+            )}
             <div className="px-10 py-8 bg-slate-50 border-t border-slate-100 flex items-center justify-between sticky bottom-0 z-10">
               <div className="flex gap-4">
                 {currentStep > 1 && (

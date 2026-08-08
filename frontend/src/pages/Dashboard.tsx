@@ -15,38 +15,66 @@ import {
 } from "lucide-react";
 import { fetchApi } from "../utils/api";
 
+interface ActivityItem {
+  id?: string | number;
+  type?: string;
+  title?: string;
+  time?: string;
+  status?: string;
+  [key: string]: unknown;
+}
+
+interface SummaryData {
+  totals: {
+    auditorium: number;
+    classroom: number;
+    transport: number;
+    overall: number;
+    [key: string]: number;
+  };
+  todayActivities: ActivityItem[];
+}
+
+const getGreetingText = () => {
+  const hour = new Date().getHours();
+  if (hour < 12) return "Good morning";
+  if (hour < 18) return "Good afternoon";
+  return "Good evening";
+};
+
+const getDateText = () => {
+  const now = new Date();
+  const yyyy = now.getFullYear();
+  const mm = String(now.getMonth() + 1).padStart(2, '0');
+  const dd = String(now.getDate()).padStart(2, '0');
+  return `${yyyy}/${mm}/${dd}`;
+};
+
 export default function Dashboard() {
-  const [greeting, setGreeting] = useState("");
-  const [dateStr, setDateStr] = useState("");
-  const [summaryData, setSummaryData] = useState<{totals: any, todayActivities: any[]}>({
+  const [greeting] = useState(getGreetingText);
+  const [dateStr] = useState(getDateText);
+  const [summaryData, setSummaryData] = useState<SummaryData>({
     totals: { auditorium: 0, classroom: 0, transport: 0, overall: 0 },
     todayActivities: []
   });
   const userRole = localStorage.getItem("userRole") || "user";
 
   useEffect(() => {
-    const hour = new Date().getHours();
-    if (hour < 12) setGreeting("Good morning");
-    else if (hour < 18) setGreeting("Good afternoon");
-    else setGreeting("Good evening");
-
-    const now = new Date();
-    const yyyy = now.getFullYear();
-    const mm = String(now.getMonth() + 1).padStart(2, '0');
-    const dd = String(now.getDate()).padStart(2, '0');
-    setDateStr(`${yyyy}/${mm}/${dd}`);
-
-    loadStats();
+    let isMounted = true;
+    fetchApi('/dashboard/stats')
+      .then((res) => {
+        const data = res as SummaryData;
+        if (isMounted && data && data.totals) {
+          setSummaryData(data);
+        }
+      })
+      .catch((error) => {
+        console.error("Failed to load dashboard stats", error);
+      });
+    return () => {
+      isMounted = false;
+    };
   }, []);
-
-  const loadStats = async () => {
-    try {
-      const data = await fetchApi('/dashboard/stats');
-      setSummaryData(data);
-    } catch (error) {
-      console.error("Failed to load dashboard stats", error);
-    }
-  };
 
   const stats = [
     { title: "Classroom Bookings", value: summaryData.totals.classroom.toString(), icon: CalendarCheck, trend: "+12%", trendUp: true, color: "text-blue-600", bg: "bg-blue-100" },

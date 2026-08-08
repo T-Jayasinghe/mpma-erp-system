@@ -30,6 +30,8 @@ const ApplicationDocument_1 = __importDefault(require("../models/ApplicationDocu
 const VerificationChecklist_1 = __importDefault(require("../models/VerificationChecklist"));
 const SlpaEmployee_1 = __importDefault(require("../models/SlpaEmployee"));
 const Maintenance_1 = __importDefault(require("../models/Maintenance"));
+const BankBranch_1 = __importDefault(require("../models/BankBranch"));
+const bankBranchesData_1 = require("../data/bankBranchesData");
 const associations_1 = require("../models/associations");
 const bcryptjs_1 = __importDefault(require("bcryptjs"));
 const toDate = (year, month, day) => `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
@@ -41,6 +43,10 @@ const seedAll = () => __awaiter(void 0, void 0, void 0, function* () {
         yield db_1.sequelize.authenticate();
         yield db_1.sequelize.sync({ force: true });
         console.log('Database sync complete.');
+        // Seed Bank Branches
+        console.log('Seeding bank branches...');
+        yield BankBranch_1.default.bulkCreate(bankBranchesData_1.INITIAL_BANK_BRANCHES);
+        console.log(`Seeded ${bankBranchesData_1.INITIAL_BANK_BRANCHES.length} bank branch records.`);
         // 1. Seed Users
         console.log('Seeding users...');
         const salt = yield bcryptjs_1.default.genSalt(10);

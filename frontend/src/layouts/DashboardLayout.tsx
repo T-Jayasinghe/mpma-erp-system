@@ -21,10 +21,12 @@ import {
   CreditCard,
   ClipboardCheck,
   ShieldCheck,
-  Award
+  Award,
+  Settings
 } from "lucide-react";
 import logoImg from "../assets/logo.png";
 import ChangePasswordModal from "../components/ChangePasswordModal";
+import SettingsModal from "../components/SettingsModal";
 
 export default function DashboardLayout({ children }: any) {
   const navigate = useNavigate();
@@ -49,6 +51,7 @@ export default function DashboardLayout({ children }: any) {
     location.pathname.startsWith("/student-management")
   );
   const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false);
+  const [isBankSettingsOpen, setIsBankSettingsOpen] = useState(false);
 
   const handleLogout = () => {
     localStorage.removeItem("userRole");
@@ -313,15 +316,22 @@ export default function DashboardLayout({ children }: any) {
             </div>
           </div>
           <button
+            onClick={() => setIsBankSettingsOpen(true)}
+            className="w-full flex items-center justify-center gap-2 bg-slate-800 hover:bg-slate-700 text-slate-300 py-2.5 px-4 rounded-xl transition-all duration-200 border border-transparent mb-2 text-sm font-medium cursor-pointer"
+          >
+            <Settings className="w-4 h-4 text-brand-400" />
+            Settings
+          </button>
+          <button
             onClick={() => setIsChangePasswordOpen(true)}
-            className="w-full flex items-center justify-center gap-2 bg-slate-800 hover:bg-slate-700 text-slate-300 py-2.5 px-4 rounded-xl transition-all duration-200 border border-transparent mb-2 text-sm font-medium"
+            className="w-full flex items-center justify-center gap-2 bg-slate-800 hover:bg-slate-700 text-slate-300 py-2.5 px-4 rounded-xl transition-all duration-200 border border-transparent mb-2 text-sm font-medium cursor-pointer"
           >
             <Key className="w-4 h-4" />
             Change Password
           </button>
           <button
             onClick={handleLogout}
-            className="w-full flex items-center justify-center gap-2 bg-slate-800 hover:bg-red-500/10 hover:text-red-400 text-slate-300 py-2.5 px-4 rounded-xl transition-all duration-200 border border-transparent hover:border-red-500/20 text-sm font-medium"
+            className="w-full flex items-center justify-center gap-2 bg-slate-800 hover:bg-red-500/10 hover:text-red-400 text-slate-300 py-2.5 px-4 rounded-xl transition-all duration-200 border border-transparent hover:border-red-500/20 text-sm font-medium cursor-pointer"
           >
             <LogOut className="w-4 h-4" />
             Sign Out
@@ -332,6 +342,11 @@ export default function DashboardLayout({ children }: any) {
       <ChangePasswordModal 
         isOpen={isChangePasswordOpen} 
         onClose={() => setIsChangePasswordOpen(false)} 
+      />
+
+      <SettingsModal 
+        isOpen={isBankSettingsOpen} 
+        onClose={() => setIsBankSettingsOpen(false)} 
       />
 
       {/* Main Content Area */}

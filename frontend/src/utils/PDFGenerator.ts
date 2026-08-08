@@ -525,22 +525,23 @@ export const generateBatchesReport = (batches: any[], courses: any[], filters: {
   
   doc.text(`Applied Filters:  ${filterParts}`, 20, 45);
 
-  const tableHead = [['#', 'Batch Code', 'Course Title', 'Location', 'Start Date', 'End Date', 'Enrolled', 'Max Capacity', 'Occupancy', 'Status']];
+  const tableHead = [['#', 'Batch Code', 'Course Title', 'Schedule', 'Mode', 'Type', 'Location', 'Start Date', 'End Date', 'Enrolled', 'Max Cap', 'Status']];
   const tableBody = batches.map((b, index) => {
     const enrolled = Number(b.currentStudents || 0);
     const maxCap = Number(b.maxStudents || 0);
-    const occupancy = maxCap > 0 ? `${Math.round((enrolled / maxCap) * 100)}%` : '0%';
 
     return [
       index + 1,
       b.batchCode || 'N/A',
       getCourseName(b.courseId),
+      b.schedule || 'Weekday',
+      b.mode || 'Physical',
+      b.type || 'Full Time',
       b.location || 'N/A',
       b.startDate ? new Date(b.startDate).toLocaleDateString('en-LK') : 'N/A',
       b.endDate ? new Date(b.endDate).toLocaleDateString('en-LK') : 'N/A',
       enrolled,
       maxCap,
-      occupancy,
       b.status || 'Available'
     ];
   });
@@ -550,20 +551,22 @@ export const generateBatchesReport = (batches: any[], courses: any[], filters: {
     head: tableHead,
     body: tableBody,
     theme: 'striped',
-    headStyles: { fillColor: PRIMARY_COLOR, textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 9 },
+    headStyles: { fillColor: PRIMARY_COLOR, textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 8.5 },
     alternateRowStyles: { fillColor: [248, 250, 252] },
-    styles: { fontSize: 8.5, cellPadding: 3, font: 'helvetica' },
+    styles: { fontSize: 8, cellPadding: 2.5, font: 'helvetica' },
     columnStyles: {
-      0: { cellWidth: 10, halign: 'center' },
-      1: { cellWidth: 28, fontStyle: 'bold' },
-      2: { cellWidth: 80 },
-      3: { cellWidth: 35 },
-      4: { cellWidth: 25 },
-      5: { cellWidth: 25 },
-      6: { cellWidth: 20, halign: 'center' },
-      7: { cellWidth: 22, halign: 'center' },
-      8: { cellWidth: 22, halign: 'center' },
-      9: { cellWidth: 22, halign: 'center' }
+      0: { cellWidth: 8, halign: 'center' },
+      1: { cellWidth: 25, fontStyle: 'bold' },
+      2: { cellWidth: 60 },
+      3: { cellWidth: 20 },
+      4: { cellWidth: 20 },
+      5: { cellWidth: 20 },
+      6: { cellWidth: 30 },
+      7: { cellWidth: 22 },
+      8: { cellWidth: 22 },
+      9: { cellWidth: 16, halign: 'center' },
+      10: { cellWidth: 16, halign: 'center' },
+      11: { cellWidth: 18, halign: 'center' }
     }
   });
 

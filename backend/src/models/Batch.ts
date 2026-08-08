@@ -10,9 +10,12 @@ export interface BatchAttributes {
   maxStudents: number;
   currentStudents: number;
   status: 'Available' | 'Full' | 'Completed';
+  schedule?: 'Weekday' | 'Weekend';
+  mode?: 'Online' | 'Physical' | 'Hybrid';
+  type?: 'Full Time' | 'Part Time';
 }
 
-interface BatchCreationAttributes extends Optional<BatchAttributes, 'id' | 'currentStudents' | 'status'> {}
+interface BatchCreationAttributes extends Optional<BatchAttributes, 'id' | 'currentStudents' | 'status' | 'schedule' | 'mode' | 'type'> {}
 
 export class Batch extends Model<BatchAttributes, BatchCreationAttributes> implements BatchAttributes {
   public id!: string;
@@ -24,6 +27,9 @@ export class Batch extends Model<BatchAttributes, BatchCreationAttributes> imple
   public maxStudents!: number;
   public currentStudents!: number;
   public status!: 'Available' | 'Full' | 'Completed';
+  public schedule?: 'Weekday' | 'Weekend';
+  public mode?: 'Online' | 'Physical' | 'Hybrid';
+  public type?: 'Full Time' | 'Part Time';
 
   public readonly createdAt!: Date;
   public readonly updatedAt!: Date;
@@ -69,6 +75,21 @@ Batch.init(
     status: {
       type: DataTypes.ENUM('Available', 'Full', 'Completed'),
       defaultValue: 'Available',
+    },
+    schedule: {
+      type: DataTypes.ENUM('Weekday', 'Weekend'),
+      allowNull: true,
+      defaultValue: 'Weekday',
+    },
+    mode: {
+      type: DataTypes.ENUM('Online', 'Physical', 'Hybrid'),
+      allowNull: true,
+      defaultValue: 'Physical',
+    },
+    type: {
+      type: DataTypes.ENUM('Full Time', 'Part Time'),
+      allowNull: true,
+      defaultValue: 'Full Time',
     },
   },
   {

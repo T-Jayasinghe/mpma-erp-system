@@ -16,6 +16,7 @@ import batchRoutes from './routes/batchRoutes';
 import lecturerRoutes from './routes/lecturerRoutes';
 import studentRoutes from './routes/studentRoutes';
 import studentPaymentRoutes from './routes/studentPaymentRoutes';
+import bankRoutes from './routes/bankRoutes';
 import Maintenance from './models/Maintenance';
 import User from './models/User';
 import Student from './models/Student';
@@ -27,6 +28,7 @@ import publicCourseRoutes from './routes/publicCourseRoutes';
 import publicApplicationRoutes from './routes/publicApplicationRoutes';
 import './models/SlpaEmployee';
 import './models/CourseLecturer';
+import './models/BankBranch';
 
 // Set up model relationships
 setupAssociations();
@@ -57,6 +59,7 @@ app.use('/api/batches', batchRoutes);
 app.use('/api/lecturers', lecturerRoutes);
 app.use('/api/students', studentRoutes);
 app.use('/api/student-payments', studentPaymentRoutes);
+app.use('/api/banks', bankRoutes);
 app.use('/api/public/courses', publicCourseRoutes);
 app.use('/api/public', publicApplicationRoutes);
 // Error Handler

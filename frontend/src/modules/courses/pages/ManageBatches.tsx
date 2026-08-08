@@ -27,6 +27,10 @@ export default function ManageBatches() {
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
   const userRole = localStorage.getItem("userRole") || "user";
 
+  const [selectedScheduleFilter, setSelectedScheduleFilter] = useState("");
+  const [selectedModeFilter, setSelectedModeFilter] = useState("");
+  const [selectedTypeFilter, setSelectedTypeFilter] = useState("");
+
   const [form, setForm] = useState({
     batchCode: "",
     courseId: "",
@@ -35,7 +39,10 @@ export default function ManageBatches() {
     location: "",
     maxStudents: "",
     currentStudents: "0",
-    status: "Available"
+    status: "Available",
+    schedule: "Weekday",
+    mode: "Physical",
+    type: "Full Time"
   });
 
   useEffect(() => {
@@ -71,6 +78,18 @@ export default function ManageBatches() {
     });
   };
 
+  const handleCourseChange = (e: any) => {
+    const selectedId = e.target.value;
+    const selectedCourse = courses.find((c: any) => c.id === selectedId);
+    setForm(prev => ({
+      ...prev,
+      courseId: selectedId,
+      schedule: selectedCourse?.schedule || prev.schedule || "Weekday",
+      mode: selectedCourse?.mode || prev.mode || "Physical",
+      type: selectedCourse?.type || prev.type || "Full Time"
+    }));
+  };
+
   const handleEdit = (b: any) => {
     setEditingId(b.id);
     setForm({
@@ -81,7 +100,10 @@ export default function ManageBatches() {
       location: b.location,
       maxStudents: b.maxStudents.toString(),
       currentStudents: b.currentStudents.toString(),
-      status: b.status
+      status: b.status,
+      schedule: b.schedule || "Weekday",
+      mode: b.mode || "Physical",
+      type: b.type || "Full Time"
     });
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -161,7 +183,10 @@ export default function ManageBatches() {
       location: "",
       maxStudents: "",
       currentStudents: "0",
-      status: "Available"
+      status: "Available",
+      schedule: "Weekday",
+      mode: "Physical",
+      type: "Full Time"
     });
   };
 
@@ -186,12 +211,12 @@ export default function ManageBatches() {
       </div>
 
       {/* Main Layout Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
         
         {/* Form Column */}
-        <div className="lg:col-span-1">
-          <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden sticky top-[190px]">
-            <div className="p-5 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
+        <div className="lg:col-span-1 sticky top-24 max-h-[calc(100vh-200px)] flex flex-col">
+          <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden flex flex-col h-full">
+            <div className="p-5 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center shrink-0">
               <h2 className="text-lg font-bold text-slate-800">
                 {editingId ? "Edit Batch" : "Add New Batch"}
               </h2>
@@ -205,7 +230,8 @@ export default function ManageBatches() {
               )}
             </div>
             
-            <form onSubmit={handleSaveBatch} className="p-5 space-y-5">
+            <form onSubmit={handleSaveBatch} className="flex-1 flex flex-col min-h-0 overflow-hidden">
+              <div className="p-5 space-y-5 flex-1 overflow-y-auto scrollbar-thin">
               
               <div>
                 <label className="block text-sm font-semibold text-slate-700 mb-1.5">Batch Identifier / Code</label>
@@ -224,7 +250,7 @@ export default function ManageBatches() {
                 <select
                   name="courseId"
                   value={form.courseId}
-                  onChange={handleChange}
+                  onChange={handleCourseChange}
                   className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 focus:bg-white transition-all outline-none"
                   required
                 >
@@ -235,6 +261,52 @@ export default function ManageBatches() {
                     </option>
                   ))}
                 </select>
+              </div>
+
+              {/* Schedule, Mode & Type Selection Controls */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-3.5 bg-emerald-50/40 rounded-xl border border-emerald-100/80">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">Schedule</label>
+                  <select
+                    name="schedule"
+                    value={form.schedule}
+                    onChange={handleChange}
+                    className="w-full px-2.5 py-2 bg-white border border-slate-200 rounded-lg text-xs font-semibold text-slate-700 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none"
+                    required
+                  >
+                    <option value="Weekday">Weekday</option>
+                    <option value="Weekend">Weekend</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">Delivery Mode</label>
+                  <select
+                    name="mode"
+                    value={form.mode}
+                    onChange={handleChange}
+                    className="w-full px-2.5 py-2 bg-white border border-slate-200 rounded-lg text-xs font-semibold text-slate-700 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none"
+                    required
+                  >
+                    <option value="Physical">Physical</option>
+                    <option value="Online">Online</option>
+                    <option value="Hybrid">Hybrid</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">Study Type</label>
+                  <select
+                    name="type"
+                    value={form.type}
+                    onChange={handleChange}
+                    className="w-full px-2.5 py-2 bg-white border border-slate-200 rounded-lg text-xs font-semibold text-slate-700 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none"
+                    required
+                  >
+                    <option value="Full Time">Full Time</option>
+                    <option value="Part Time">Part Time</option>
+                  </select>
+                </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
@@ -267,6 +339,7 @@ export default function ManageBatches() {
                 <input
                   name="location"
                   value={form.location}
+                  onChange={handleChange}
                   placeholder="e.g. Block A Level 02 LH-1"
                   className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 focus:bg-white transition-all outline-none"
                   required
@@ -317,26 +390,29 @@ export default function ManageBatches() {
                   </select>
                 </div>
               )}
+              </div>
 
-              <button
-                type="submit"
-                className={`w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl font-semibold text-white transition-all hover:-translate-y-0.5 mt-2 shadow-md ${
-                  editingId ? "bg-amber-600 hover:bg-amber-700 shadow-amber-500/20" : "bg-emerald-600 hover:bg-emerald-700 shadow-emerald-500/20"
-                }`}
-              >
-                {editingId ? <Edit3 className="w-5 h-5" /> : <Plus className="w-5 h-5" />}
-                {editingId ? "Update Batch" : "Add Batch"}
-              </button>
+              <div className="p-4 border-t border-slate-100 bg-white shrink-0">
+                <button
+                  type="submit"
+                  className={`w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl font-semibold text-white transition-all hover:-translate-y-0.5 shadow-md ${
+                    editingId ? "bg-amber-600 hover:bg-amber-700 shadow-amber-500/20" : "bg-emerald-600 hover:bg-emerald-700 shadow-emerald-500/20"
+                  }`}
+                >
+                  {editingId ? <Edit3 className="w-5 h-5" /> : <Plus className="w-5 h-5" />}
+                  {editingId ? "Update Batch" : "Add Batch"}
+                </button>
+              </div>
             </form>
           </div>
         </div>
 
         {/* Batches Table List */}
-        <div className="lg:col-span-2 space-y-6">
-          <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+        <div className="lg:col-span-2 sticky top-24 max-h-[calc(100vh-200px)] flex flex-col">
+          <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden flex flex-col h-full">
             
             {/* Filtering Tools */}
-            <div className="p-5 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-50/50">
+            <div className="p-5 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-50/50 shrink-0">
               <div className="flex items-center gap-4">
                 <h2 className="text-lg font-bold text-slate-800">Recent Intakes</h2>
                 <span className="text-sm font-medium text-slate-500 bg-white px-3 py-1 rounded-full border border-slate-200">
@@ -354,6 +430,27 @@ export default function ManageBatches() {
                   {courses.map(c => (
                     <option key={c.id} value={c.id}>{c.courseCode}</option>
                   ))}
+                </select>
+
+                <select
+                  value={selectedScheduleFilter}
+                  onChange={(e) => setSelectedScheduleFilter(e.target.value)}
+                  className="px-3 py-2 bg-white border border-slate-200 rounded-xl text-sm font-semibold text-slate-700 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none shadow-sm"
+                >
+                  <option value="">All Schedules</option>
+                  <option value="Weekday">Weekday</option>
+                  <option value="Weekend">Weekend</option>
+                </select>
+
+                <select
+                  value={selectedModeFilter}
+                  onChange={(e) => setSelectedModeFilter(e.target.value)}
+                  className="px-3 py-2 bg-white border border-slate-200 rounded-xl text-sm font-semibold text-slate-700 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none shadow-sm"
+                >
+                  <option value="">All Modes</option>
+                  <option value="Physical">Physical</option>
+                  <option value="Online">Online</option>
+                  <option value="Hybrid">Hybrid</option>
                 </select>
 
                 <div className="relative w-full sm:w-56">
@@ -381,7 +478,7 @@ export default function ManageBatches() {
             </div>
 
             {/* List */}
-            <div className="p-5">
+            <div className="p-5 flex-1 overflow-y-auto scrollbar-thin">
               {batches.length === 0 ? (
                 <div className="text-center py-10 bg-slate-50/50 rounded-xl border border-dashed border-slate-200">
                   <CalendarDays className="w-12 h-12 text-slate-300 mx-auto mb-3" />
@@ -393,6 +490,8 @@ export default function ManageBatches() {
                   {batches
                     .filter(b => 
                       (selectedCourseFilter === "" || b.courseId === selectedCourseFilter) &&
+                      (selectedScheduleFilter === "" || (b.schedule || "Weekday") === selectedScheduleFilter) &&
+                      (selectedModeFilter === "" || (b.mode || "Physical") === selectedModeFilter) &&
                       (b.batchCode.toLowerCase().includes(searchQuery.toLowerCase()) || 
                        b.location.toLowerCase().includes(searchQuery.toLowerCase()) ||
                        (b.course?.courseName || "").toLowerCase().includes(searchQuery.toLowerCase()))
@@ -413,8 +512,31 @@ export default function ManageBatches() {
                                 <span className="text-[10px] font-bold bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded border border-emerald-100 uppercase tracking-wider">
                                   {b.batchCode}
                                 </span>
-                                <span className="text-[10px] font-bold bg-slate-50 text-slate-500 px-2 py-0.5 rounded border border-slate-200 uppercase tracking-wider max-w-[250px] truncate">
+                                <span className="text-[10px] font-bold bg-slate-50 text-slate-500 px-2 py-0.5 rounded border border-slate-200 uppercase tracking-wider max-w-[200px] truncate">
                                   {b.course?.courseName || "General Intake"}
+                                </span>
+                                <span className={`text-[10px] font-semibold px-2 py-0.5 rounded border ${
+                                  (b.schedule || 'Weekday') === 'Weekend' 
+                                    ? 'bg-purple-50 text-purple-700 border-purple-200' 
+                                    : 'bg-blue-50 text-blue-700 border-blue-200'
+                                }`}>
+                                  {b.schedule || 'Weekday'}
+                                </span>
+                                <span className={`text-[10px] font-semibold px-2 py-0.5 rounded border ${
+                                  (b.mode || 'Physical') === 'Online' 
+                                    ? 'bg-sky-50 text-sky-700 border-sky-200' 
+                                    : (b.mode || 'Physical') === 'Hybrid'
+                                    ? 'bg-amber-50 text-amber-700 border-amber-200'
+                                    : 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                                }`}>
+                                  {b.mode || 'Physical'}
+                                </span>
+                                <span className={`text-[10px] font-semibold px-2 py-0.5 rounded border ${
+                                  (b.type || 'Full Time') === 'Part Time' 
+                                    ? 'bg-indigo-50 text-indigo-700 border-indigo-200' 
+                                    : 'bg-teal-50 text-teal-700 border-teal-200'
+                                }`}>
+                                  {b.type || 'Full Time'}
                                 </span>
                               </div>
                             </div>

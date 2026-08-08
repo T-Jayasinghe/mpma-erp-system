@@ -29,11 +29,13 @@ const batchRoutes_1 = __importDefault(require("./routes/batchRoutes"));
 const lecturerRoutes_1 = __importDefault(require("./routes/lecturerRoutes"));
 const studentRoutes_1 = __importDefault(require("./routes/studentRoutes"));
 const studentPaymentRoutes_1 = __importDefault(require("./routes/studentPaymentRoutes"));
+const bankRoutes_1 = __importDefault(require("./routes/bankRoutes"));
 const associations_1 = require("./models/associations");
 const publicCourseRoutes_1 = __importDefault(require("./routes/publicCourseRoutes"));
 const publicApplicationRoutes_1 = __importDefault(require("./routes/publicApplicationRoutes"));
 require("./models/SlpaEmployee");
 require("./models/CourseLecturer");
+require("./models/BankBranch");
 // Set up model relationships
 (0, associations_1.setupAssociations)();
 const app = (0, express_1.default)();
@@ -59,6 +61,7 @@ app.use('/api/batches', batchRoutes_1.default);
 app.use('/api/lecturers', lecturerRoutes_1.default);
 app.use('/api/students', studentRoutes_1.default);
 app.use('/api/student-payments', studentPaymentRoutes_1.default);
+app.use('/api/banks', bankRoutes_1.default);
 app.use('/api/public/courses', publicCourseRoutes_1.default);
 app.use('/api/public', publicApplicationRoutes_1.default);
 // Error Handler

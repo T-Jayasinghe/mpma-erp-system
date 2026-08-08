@@ -138,7 +138,7 @@ export default function CourseReportModal({
         const course = coursesList.find((c: any) => c.id === courseId);
         return course ? `${course.courseCode} - ${course.courseName}` : courseId || '';
       };
-      const headers = ['Batch Code', 'Course', 'Location', 'Start Date', 'End Date', 'Enrolled Students', 'Max Capacity', 'Occupancy Rate', 'Status'];
+      const headers = ['Batch Code', 'Course', 'Schedule', 'Mode', 'Type', 'Location', 'Start Date', 'End Date', 'Enrolled Students', 'Max Capacity', 'Occupancy Rate', 'Status'];
       const rows = filteredItems.map(b => {
         const enrolled = Number(b.currentStudents || 0);
         const maxCap = Number(b.maxStudents || 0);
@@ -146,6 +146,9 @@ export default function CourseReportModal({
         return [
           b.batchCode || '',
           getCourseName(b.courseId),
+          b.schedule || 'Weekday',
+          b.mode || 'Physical',
+          b.type || 'Full Time',
           b.location || '',
           b.startDate || '',
           b.endDate || '',

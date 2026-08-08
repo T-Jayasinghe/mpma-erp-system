@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import DashboardLayout from "../../../layouts/DashboardLayout";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
@@ -16,27 +16,52 @@ import {
 } from "lucide-react";
 import { fetchApi } from "../../../utils/api";
 
+interface VerificationApplication {
+  id: string;
+  applicationNumber?: string;
+  fullName?: string;
+  firstName?: string;
+  lastName?: string;
+  email?: string;
+  course?: string;
+  studentCategory?: string;
+  registrationDate?: string;
+  createdAt?: string;
+  status?: string;
+  [key: string]: unknown;
+}
+
+const getTimeSince = (date?: string) => {
+  if (!date) return "Recently";
+  const diff = Date.now() - new Date(date).getTime();
+  if (isNaN(diff)) return "Recently";
+  const days = Math.floor(diff / 86400000);
+  if (days <= 0) return "Today";
+  if (days === 1) return "Yesterday";
+  return `${days} days ago`;
+};
+
 export default function VerificationList() {
   const navigate = useNavigate();
-  const [applications, setApplications] = useState<any[]>([]);
+  const [applications, setApplications] = useState<VerificationApplication[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    loadApplications();
-  }, []);
-
-  const loadApplications = async () => {
+  const loadApplications = useCallback(async () => {
     setLoading(true);
     try {
-      const data = await fetchApi("/students/pending");
+      const data = (await fetchApi("/students/pending")) as { students?: VerificationApplication[] };
       setApplications(data?.students || []);
     } catch {
       toast.error("Failed to load pending applications");
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    loadApplications();
+  }, [loadApplications]);
 
   const filtered = applications.filter((a) => {
     const q = searchQuery.toLowerCase();
@@ -46,14 +71,6 @@ export default function VerificationList() {
       a.course?.toLowerCase().includes(q)
     );
   });
-
-  const getTimeSince = (date: string) => {
-    const diff = Date.now() - new Date(date).getTime();
-    const days = Math.floor(diff / 86400000);
-    if (days === 0) return "Today";
-    if (days === 1) return "Yesterday";
-    return `${days} days ago`;
-  };
 
   return (
     <DashboardLayout>

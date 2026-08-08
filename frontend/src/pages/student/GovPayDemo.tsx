@@ -52,7 +52,7 @@ export default function GovPayDemo() {
       } else {
         toast.error(json.message || "Failed to process callback.");
       }
-    } catch (error) {
+    } catch {
       toast.error("Could not connect to server.");
     } finally {
       setLoading(false);

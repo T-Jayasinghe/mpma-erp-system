@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import type { ElementType } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { toast } from "react-toastify";
@@ -52,6 +52,12 @@ const SectionCard = ({
   </div>
 );
 
+const formatDate = (dateStr?: string | null) => {
+  if (!dateStr) return "—";
+  const parsed = new Date(dateStr);
+  return isNaN(parsed.getTime()) ? "—" : parsed.toLocaleDateString("en-LK");
+};
+
 export default function StudentProfile() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -77,33 +83,25 @@ export default function StudentProfile() {
     status: "Enrolled" as StudentStatus,
   });
 
-  useEffect(() => {
-    if (id) loadStudent(id);
-  }, [id]);
-
-  useEffect(() => {
-    setIsEditing(searchParams.get("edit") === "true");
-  }, [searchParams]);
-
-  const loadStudent = async (studentId: string) => {
+  const loadStudent = useCallback(async (studentId: string) => {
     setLoading(true);
     try {
       const data: StudentRecord = await fetchApi(`/students/${studentId}`);
       setStudent(data);
       setEditForm({
-        firstName: data.firstName,
-        lastName: data.lastName,
-        email: data.email,
-        phone: data.phone,
-        dob: data.dob?.split("T")[0] || data.dob,
-        gender: data.gender,
-        address: data.address,
-        course: data.course,
-        batch: data.batch,
+        firstName: data.firstName || "",
+        lastName: data.lastName || "",
+        email: data.email || "",
+        phone: data.phone || "",
+        dob: data.dob ? (data.dob.includes("T") ? data.dob.split("T")[0] : data.dob) : "",
+        gender: data.gender || "Male",
+        address: data.address || "",
+        course: data.course || "",
+        batch: data.batch || "",
         studentCategory: data.studentCategory || "",
         nic: data.nic || "",
         passport: data.passport || "",
-        status: data.status,
+        status: data.status || "Enrolled",
       });
     } catch {
       toast.error("Failed to load student profile");
@@ -111,7 +109,15 @@ export default function StudentProfile() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [navigate]);
+
+  useEffect(() => {
+    if (id) loadStudent(id);
+  }, [id, loadStudent]);
+
+  useEffect(() => {
+    setIsEditing(searchParams.get("edit") === "true");
+  }, [searchParams]);
 
   const handleSave = async () => {
     if (!id) return;
@@ -137,19 +143,19 @@ export default function StudentProfile() {
   const cancelEdit = () => {
     if (!student) return;
     setEditForm({
-      firstName: student.firstName,
-      lastName: student.lastName,
-      email: student.email,
-      phone: student.phone,
-      dob: student.dob?.split("T")[0] || student.dob,
-      gender: student.gender,
-      address: student.address,
-      course: student.course,
-      batch: student.batch,
+      firstName: student.firstName || "",
+      lastName: student.lastName || "",
+      email: student.email || "",
+      phone: student.phone || "",
+      dob: student.dob ? (student.dob.includes("T") ? student.dob.split("T")[0] : student.dob) : "",
+      gender: student.gender || "Male",
+      address: student.address || "",
+      course: student.course || "",
+      batch: student.batch || "",
       studentCategory: student.studentCategory || "",
       nic: student.nic || "",
       passport: student.passport || "",
-      status: student.status,
+      status: student.status || "Enrolled",
     });
     setIsEditing(false);
     setSearchParams({});
@@ -168,6 +174,7 @@ export default function StudentProfile() {
   const fullName = getStudentFullName(student);
   const latestPayment = student.latestPayment;
   const paymentStatus = latestPayment?.payment_status || "No Payment";
+  const avatarInitials = `${student.firstName?.[0] || ""}${student.lastName?.[0] || ""}`.toUpperCase() || "S";
 
   return (
     <DashboardLayout>
@@ -183,8 +190,7 @@ export default function StudentProfile() {
             <div>
               <div className="flex items-center gap-3 mb-1">
                 <div className="w-12 h-12 rounded-2xl bg-indigo-100 text-indigo-600 flex items-center justify-center font-bold text-lg">
-                  {student.firstName[0]}
-                  {student.lastName[0]}
+                  {avatarInitials}
                 </div>
                 <div>
                   <h1 className="text-2xl md:text-3xl font-extrabold text-slate-800">{fullName}</h1>
@@ -322,10 +328,7 @@ export default function StudentProfile() {
                 <InfoRow label="NIC" value={student.nic || "—"} />
                 <InfoRow label="Passport" value={student.passport || "—"} />
                 <InfoRow label="NIC / Passport" value={getNicOrPassport(student)} />
-                <InfoRow
-                  label="Date of Birth"
-                  value={new Date(student.dob).toLocaleDateString("en-LK")}
-                />
+                <InfoRow label="Date of Birth" value={formatDate(student.dob)} />
                 <InfoRow label="Gender" value={student.gender} />
               </>
             )}
@@ -384,14 +387,8 @@ export default function StudentProfile() {
               <>
                 <InfoRow label="Course" value={student.course} />
                 <InfoRow label="Batch" value={student.batch} />
-                <InfoRow
-                  label="Enrollment Date"
-                  value={new Date(student.enrollmentDate).toLocaleDateString("en-LK")}
-                />
-                <InfoRow
-                  label="Created Date"
-                  value={new Date(student.createdAt).toLocaleDateString("en-LK")}
-                />
+                <InfoRow label="Enrollment Date" value={formatDate(student.enrollmentDate)} />
+                <InfoRow label="Created Date" value={formatDate(student.createdAt)} />
               </>
             )}
           </SectionCard>
@@ -464,11 +461,38 @@ export default function StudentProfile() {
 
         {/* Educational Qualifications Section Card */}
         {(() => {
-          let qualData: any = null;
-          const rawNotes = student.admin_notes || (student as any).qualificationsData || (student as any).qualifications;
+          interface QualificationItem {
+            subject?: string;
+            grade?: string;
+          }
+          interface OtherItem {
+            title?: string;
+            institute?: string;
+            year?: string;
+            result?: string;
+          }
+          interface QualificationsStructure {
+            ol?: {
+              year?: string;
+              indexNumber?: string;
+              medium?: string;
+              subjects?: QualificationItem[];
+            };
+            al?: {
+              stream?: string;
+              year?: string;
+              indexNumber?: string;
+              zScore?: string;
+              subjects?: QualificationItem[];
+            };
+            otherQualifications?: OtherItem[];
+          }
+
+          let qualData: QualificationsStructure | null = null;
+          const rawNotes = student?.admin_notes || student?.qualificationsData || student?.qualifications;
           if (rawNotes) {
             try {
-              qualData = typeof rawNotes === 'string' ? JSON.parse(rawNotes) : rawNotes;
+              qualData = typeof rawNotes === 'string' ? JSON.parse(rawNotes) : (rawNotes as QualificationsStructure);
               if (typeof qualData === 'string') {
                 qualData = JSON.parse(qualData);
               }
@@ -504,7 +528,7 @@ export default function StudentProfile() {
 
                     {ol.subjects && ol.subjects.length > 0 ? (
                       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
-                        {ol.subjects.map((sub: any, idx: number) => (
+                        {ol.subjects.map((sub: QualificationItem, idx: number) => (
                           <div key={idx} className="bg-white px-3 py-2 rounded-xl border border-slate-200 flex items-center justify-between text-xs shadow-2xs">
                             <span className="font-semibold text-slate-700 truncate pr-2">{sub.subject}</span>
                             <span className={`px-2 py-0.5 rounded font-black text-xs shrink-0 ${
@@ -542,7 +566,7 @@ export default function StudentProfile() {
 
                     {al.subjects && al.subjects.length > 0 ? (
                       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
-                        {al.subjects.map((sub: any, idx: number) => (
+                        {al.subjects.map((sub: QualificationItem, idx: number) => (
                           <div key={idx} className="bg-white px-3 py-2 rounded-xl border border-slate-200 flex items-center justify-between text-xs shadow-2xs">
                             <span className="font-semibold text-slate-700 truncate pr-2">{sub.subject}</span>
                             <span className={`px-2 py-0.5 rounded font-black text-xs shrink-0 ${
@@ -584,7 +608,7 @@ export default function StudentProfile() {
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100">
-                          {other.map((q: any, idx: number) => (
+                          {other.map((q: OtherItem, idx: number) => (
                             <tr key={idx}>
                               <td className="py-2 px-3 font-bold text-slate-800">{q.title}</td>
                               <td className="py-2 px-3 text-slate-600">{q.institute}</td>

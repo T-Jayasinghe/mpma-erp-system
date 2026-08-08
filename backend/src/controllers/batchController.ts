@@ -31,7 +31,7 @@ export const getBatchById = async (req: Request, res: Response): Promise<void> =
 
 export const createBatch = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { batchCode, courseId, maxStudents, currentStudents } = req.body;
+    const { batchCode, courseId, maxStudents, currentStudents, schedule, mode, type } = req.body;
 
     // Validate if course exists
     const course = await Course.findByPk(courseId);
@@ -60,11 +60,18 @@ export const createBatch = async (req: Request, res: Response): Promise<void> =>
       status = 'Full';
     }
 
-    const batch = await Batch.create({
+    const created = await Batch.create({
       ...req.body,
+      schedule: schedule || course.schedule || 'Weekday',
+      mode: mode || course.mode || 'Physical',
+      type: type || course.type || 'Full Time',
       currentStudents: current,
       maxStudents: max,
       status
+    });
+
+    const batch = await Batch.findByPk(created.id, {
+      include: [{ model: Course, as: 'course' }]
     });
 
     res.status(201).json(batch);

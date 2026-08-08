@@ -53,6 +53,10 @@ Lecturer.init({
         type: db_1.DataTypes.STRING,
         allowNull: false,
     },
+    centralBankCode: {
+        type: db_1.DataTypes.STRING,
+        allowNull: true,
+    },
     accountHolderName: {
         type: db_1.DataTypes.STRING,
         allowNull: false,
@@ -89,6 +93,10 @@ Lecturer.init({
     status: {
         type: db_1.DataTypes.ENUM('Active', 'Inactive'),
         defaultValue: 'Active',
+    },
+    stream: {
+        type: db_1.DataTypes.STRING,
+        allowNull: true,
     },
 }, {
     sequelize: db_1.sequelize,

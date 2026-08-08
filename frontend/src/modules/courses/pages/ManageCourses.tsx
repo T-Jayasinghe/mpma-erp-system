@@ -17,7 +17,9 @@ import {
   Sparkles,
   Layers,
   DollarSign,
-  Download
+  Download,
+  Filter,
+  ChevronDown
 } from "lucide-react";
 import "react-toastify/dist/ReactToastify.css";
 import { fetchApi } from "../../../utils/api";
@@ -287,12 +289,12 @@ export default function ManageCourses() {
       </div>
 
       {/* Main Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
         
         {/* Form Column (5 cols) */}
-        <div className="lg:col-span-4">
-          <div className="bg-white rounded-2xl shadow-sm border border-slate-200/80 overflow-hidden sticky top-[180px]">
-            <div className="p-4 sm:p-5 border-b border-slate-100 bg-gradient-to-r from-slate-50 to-white flex justify-between items-center">
+        <div className="lg:col-span-4 sticky top-24 max-h-[calc(100vh-200px)] flex flex-col">
+          <div className="bg-white rounded-2xl shadow-sm border border-slate-200/80 overflow-hidden flex flex-col h-full">
+            <div className="p-4 sm:p-5 border-b border-slate-100 bg-gradient-to-r from-slate-50 to-white flex justify-between items-center shrink-0">
               <div className="flex items-center gap-2">
                 <Sparkles className="w-4 h-4 text-indigo-600" />
                 <h2 className="text-base font-bold text-slate-800">
@@ -309,7 +311,8 @@ export default function ManageCourses() {
               )}
             </div>
             
-            <form onSubmit={handleSaveCourse} className="p-4 sm:p-5 space-y-4 max-h-[75vh] overflow-y-auto scrollbar-thin">
+            <form onSubmit={handleSaveCourse} className="flex-1 flex flex-col min-h-0 overflow-hidden">
+              <div className="p-4 sm:p-5 space-y-4 flex-1 overflow-y-auto scrollbar-thin">
               
               {/* Basic Identifiers */}
               <div className="grid grid-cols-3 gap-3">
@@ -496,43 +499,50 @@ export default function ManageCourses() {
                   className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 focus:bg-white transition-all outline-none resize-none"
                 />
               </div>
+              </div>
 
-              <button
-                type="submit"
-                className={`w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl font-semibold text-xs text-white transition-all hover:-translate-y-0.5 shadow-md ${
-                  editingId 
-                    ? "bg-amber-600 hover:bg-amber-700 shadow-amber-500/20" 
-                    : "bg-indigo-600 hover:bg-indigo-700 shadow-indigo-500/20"
-                }`}
-              >
-                {editingId ? <Edit3 className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
-                {editingId ? "Update Course Template" : "Save Course to Registry"}
-              </button>
+              <div className="p-4 border-t border-slate-100 bg-white shrink-0">
+                <button
+                  type="submit"
+                  className={`w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl font-semibold text-xs text-white transition-all hover:-translate-y-0.5 shadow-md ${
+                    editingId 
+                      ? "bg-amber-600 hover:bg-amber-700 shadow-amber-500/20" 
+                      : "bg-indigo-600 hover:bg-indigo-700 shadow-indigo-500/20"
+                  }`}
+                >
+                  {editingId ? <Edit3 className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
+                  {editingId ? "Update Course Template" : "Save Course to Registry"}
+                </button>
+              </div>
             </form>
           </div>
         </div>
 
         {/* Course Registry Column (7 cols) */}
-        <div className="lg:col-span-8 space-y-5">
+        <div className="lg:col-span-8 sticky top-24 max-h-[calc(100vh-200px)] flex flex-col space-y-4">
           
           {/* Filter & Toolbar */}
-          <div className="bg-white rounded-2xl shadow-sm border border-slate-200/80 p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="bg-white rounded-2xl shadow-sm border border-slate-200/80 p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shrink-0">
             
-            {/* Category Stream Pills */}
-            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 scrollbar-none">
-              {streams.map((stream) => (
-                <button
-                  key={stream}
-                  onClick={() => setSelectedStream(stream)}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-medium whitespace-nowrap transition-all ${
-                    selectedStream === stream
-                      ? "bg-indigo-600 text-white shadow-sm font-semibold"
-                      : "bg-slate-100 text-slate-600 hover:bg-slate-200/70"
-                  }`}
-                >
-                  {stream}
-                </button>
-              ))}
+            {/* Category Stream Dropdown */}
+            <div className="relative min-w-[200px] w-full sm:w-auto">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-indigo-600">
+                <Filter className="w-4 h-4" />
+              </div>
+              <select
+                value={selectedStream}
+                onChange={(e) => setSelectedStream(e.target.value)}
+                className="w-full pl-9 pr-8 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 focus:bg-white outline-none transition-all appearance-none cursor-pointer"
+              >
+                {streams.map((stream) => (
+                  <option key={stream} value={stream}>
+                    {stream === "All" ? "All Streams / Categories" : stream}
+                  </option>
+                ))}
+              </select>
+              <div className="absolute inset-y-0 right-0 pr-2.5 flex items-center pointer-events-none text-slate-400">
+                <ChevronDown className="w-4 h-4" />
+              </div>
             </div>
 
             {/* Search Input & Export Button */}
@@ -570,6 +580,7 @@ export default function ManageCourses() {
           </div>
 
           {/* Cards Grid */}
+          <div className="flex-1 overflow-y-auto scrollbar-thin pr-1 space-y-4">
           {filteredCourses.length === 0 ? (
             <div className="text-center py-12 bg-white rounded-2xl border border-dashed border-slate-200 shadow-sm p-6">
               <FileText className="w-12 h-12 text-slate-300 mx-auto mb-3" />
@@ -770,6 +781,7 @@ export default function ManageCourses() {
               })}
             </div>
           )}
+          </div>
 
         </div>
 

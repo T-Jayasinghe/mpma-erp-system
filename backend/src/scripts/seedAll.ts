@@ -16,6 +16,8 @@ import ApplicationDocument from '../models/ApplicationDocument';
 import VerificationChecklist from '../models/VerificationChecklist';
 import SlpaEmployee from '../models/SlpaEmployee';
 import Maintenance from '../models/Maintenance';
+import BankBranch from '../models/BankBranch';
+import { INITIAL_BANK_BRANCHES } from '../data/bankBranchesData';
 import { setupAssociations } from '../models/associations';
 import bcrypt from 'bcryptjs';
 
@@ -31,6 +33,11 @@ const seedAll = async () => {
     await sequelize.authenticate();
     await sequelize.sync({ force: true });
     console.log('Database sync complete.');
+
+    // Seed Bank Branches
+    console.log('Seeding bank branches...');
+    await BankBranch.bulkCreate(INITIAL_BANK_BRANCHES);
+    console.log(`Seeded ${INITIAL_BANK_BRANCHES.length} bank branch records.`);
 
     // 1. Seed Users
     console.log('Seeding users...');
