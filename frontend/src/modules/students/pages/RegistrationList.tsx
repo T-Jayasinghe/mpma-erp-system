@@ -4,48 +4,64 @@ import { toast } from "react-toastify";
 import {
   Award,
   Search,
-  Download,
-  ClipboardCheck,
   Calendar,
-  Hash,
   Loader2,
   RefreshCw,
   Printer,
+  CheckCircle2,
+  GraduationCap,
+  Filter,
+  ChevronDown
 } from "lucide-react";
 import { fetchApi } from "../../../utils/api";
 
 const generateRegistrationNumber = (index: number): string => {
   const year = new Date().getFullYear();
   const seq = String(index + 1).padStart(4, "0");
-  return `MPMA-REG-${year}-${seq}`;
+  return `MPMA-CERT-${year}-${seq}`;
 };
-
-const formatCurrency = (amount: number) =>
-  `Rs. ${amount?.toLocaleString("en-LK") || "0"}`;
 
 export default function RegistrationList() {
   const [students, setStudents] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
+  const [batchFilter, setBatchFilter] = useState("All");
   const [loading, setLoading] = useState(true);
   const [selectedStudent, setSelectedStudent] = useState<any>(null);
   const [showCertificate, setShowCertificate] = useState(false);
+  const [showBatchFilter, setShowBatchFilter] = useState(false);
   const printRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    loadRegisteredStudents();
+    loadCompletedBatchStudents();
   }, []);
 
-  const loadRegisteredStudents = async () => {
+  const loadCompletedBatchStudents = async () => {
     setLoading(true);
     try {
-      // Fetch students with PAID payment status
-      const data = await fetchApi("/students");
-      const paid = (Array.isArray(data) ? data : []).filter(
-        (s: any) => s.latestPayment?.payment_status === "PAID" || s.status === "Registered"
-      );
-      setStudents(paid);
+      const [studentsData, batchesData] = await Promise.all([
+        fetchApi("/students"),
+        fetchApi("/batches").catch(() => []),
+      ]);
+
+      const allBatches = Array.isArray(batchesData) ? batchesData : [];
+
+      const allStudents = Array.isArray(studentsData) ? studentsData : [];
+      // Filter students in completed batches or who are registered/graduated/paid
+      const completedBatchIds = allBatches
+        .filter((b: any) => b.status === "Completed" || b.isCompleted)
+        .map((b: any) => b.id || b.batch_id || b.batchName || b.name);
+
+      const eligible = allStudents.filter((s: any) => {
+        const isPaidOrReg = s.latestPayment?.payment_status === "PAID" || s.status === "Registered" || s.status === "Graduated" || s.status === "Enrolled";
+        const isInCompletedBatch = completedBatchIds.some((id: string) => 
+          String(id).toLowerCase() === String(s.batchId || s.batch).toLowerCase()
+        );
+        return isPaidOrReg || isInCompletedBatch;
+      });
+
+      setStudents(eligible);
     } catch {
-      toast.error("Failed to load registered students");
+      toast.error("Failed to load certificate records");
     } finally {
       setLoading(false);
     }
@@ -53,12 +69,14 @@ export default function RegistrationList() {
 
   const filtered = students.filter((s) => {
     const q = searchQuery.toLowerCase();
-    return (
-      `${s.firstName} ${s.lastName}`.toLowerCase().includes(q) ||
-      s.email?.toLowerCase().includes(q) ||
-      s.course?.toLowerCase().includes(q)
-    );
+    const nameMatch = `${s.firstName} ${s.lastName}`.toLowerCase().includes(q);
+    const emailMatch = s.email?.toLowerCase().includes(q);
+    const courseMatch = s.course?.toLowerCase().includes(q);
+    const batchMatch = batchFilter === "All" || s.batch === batchFilter;
+    return (nameMatch || emailMatch || courseMatch) && batchMatch;
   });
+
+  const uniqueBatches = Array.from(new Set(students.map((s) => s.batch).filter(Boolean)));
 
   const openCertificate = (student: any, index: number) => {
     setSelectedStudent({
@@ -76,7 +94,7 @@ export default function RegistrationList() {
     win.document.write(`
       <html>
         <head>
-          <title>Registration Certificate - ${selectedStudent?.firstName} ${selectedStudent?.lastName}</title>
+          <title>Course Completion Certificate - ${selectedStudent?.firstName} ${selectedStudent?.lastName}</title>
           <style>
             body { margin: 0; padding: 0; font-family: 'Georgia', serif; }
             @media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
@@ -97,54 +115,54 @@ export default function RegistrationList() {
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
           <div>
             <div className="flex items-center gap-3 mb-2">
-              <div className="p-2 bg-blue-100 text-blue-700 rounded-lg">
+              <div className="p-2.5 bg-gradient-to-br from-blue-600 to-indigo-700 text-white rounded-xl shadow-md shadow-blue-500/20">
                 <Award className="w-6 h-6" />
               </div>
               <h1 className="text-3xl font-extrabold text-slate-800 tracking-tight">
-                Registration
+                Student Certificates
               </h1>
             </div>
             <p className="text-slate-500 font-medium">
-              Students who have completed payment and are officially registered
+              Course completion certificates for students from completed batches & registered graduates
             </p>
           </div>
           <button
-            onClick={loadRegisteredStudents}
-            className="flex items-center gap-2 bg-white border border-slate-200 text-slate-600 px-4 py-2.5 rounded-xl hover:bg-slate-50 transition-all font-medium text-sm"
+            onClick={loadCompletedBatchStudents}
+            className="flex items-center gap-2 bg-white border border-slate-200 text-slate-600 px-4 py-2.5 rounded-xl hover:bg-slate-50 transition-all font-semibold text-sm cursor-pointer shadow-xs"
           >
             <RefreshCw className="w-4 h-4" />
-            Refresh
+            Refresh Records
           </button>
         </div>
 
         {/* Stats */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="bg-white rounded-2xl border border-blue-100 shadow-sm p-5 flex items-center gap-4">
+          <div className="bg-white rounded-2xl border border-blue-100 shadow-xs p-5 flex items-center gap-4">
             <div className="p-3 rounded-xl bg-blue-50 text-blue-600">
-              <ClipboardCheck className="w-5 h-5" />
+              <GraduationCap className="w-6 h-6" />
             </div>
             <div>
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Total Registered</p>
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Eligible Students</p>
               <p className="text-2xl font-black text-blue-600 leading-tight">{students.length}</p>
             </div>
           </div>
-          <div className="bg-white rounded-2xl border border-indigo-100 shadow-sm p-5 flex items-center gap-4">
+          <div className="bg-white rounded-2xl border border-indigo-100 shadow-xs p-5 flex items-center gap-4">
             <div className="p-3 rounded-xl bg-indigo-50 text-indigo-600">
-              <Calendar className="w-5 h-5" />
+              <Calendar className="w-6 h-6" />
             </div>
             <div>
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">This Year</p>
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Completed Batches</p>
               <p className="text-2xl font-black text-indigo-600 leading-tight">
-                {students.filter((s) => new Date(s.enrollmentDate).getFullYear() === new Date().getFullYear()).length}
+                {uniqueBatches.length}
               </p>
             </div>
           </div>
-          <div className="bg-white rounded-2xl border border-emerald-100 shadow-sm p-5 flex items-center gap-4">
+          <div className="bg-white rounded-2xl border border-emerald-100 shadow-xs p-5 flex items-center gap-4">
             <div className="p-3 rounded-xl bg-emerald-50 text-emerald-600">
-              <Award className="w-5 h-5" />
+              <Award className="w-6 h-6" />
             </div>
             <div>
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Certificates Issued</p>
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Certificates Ready</p>
               <p className="text-2xl font-black text-emerald-600 leading-tight">{students.length}</p>
             </div>
           </div>
@@ -152,54 +170,89 @@ export default function RegistrationList() {
 
         {/* Table */}
         <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
-          <div className="p-6 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="p-6 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-50/50">
             <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
-              <Hash className="w-5 h-5 text-blue-500" />
-              Registered Students
+              <Award className="w-5 h-5 text-blue-600" />
+              Completed Batch Certificates Directory
               <span className="ml-2 px-2.5 py-0.5 rounded-full bg-blue-100 text-blue-700 text-xs font-bold">
                 {filtered.length}
               </span>
             </h2>
-            <div className="relative w-full sm:w-72">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-              <input
-                type="text"
-                placeholder="Search registered students..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-brand-500/10 focus:border-brand-500"
-              />
+
+            <div className="flex items-center gap-3">
+              <div className="relative w-full sm:w-64">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                <input
+                  type="text"
+                  placeholder="Search student, course..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full pl-9 pr-3 py-1.5 bg-white border border-slate-200 rounded-xl text-xs outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500"
+                />
+              </div>
+
+              {/* Batch Filter */}
+              <div className="relative">
+                <button
+                  onClick={() => setShowBatchFilter(!showBatchFilter)}
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-200 rounded-xl text-slate-600 hover:text-brand-600 transition-all text-xs font-semibold shadow-xs cursor-pointer"
+                >
+                  <Filter className="w-3.5 h-3.5" />
+                  <span>{batchFilter === "All" ? "Filter Batch" : batchFilter}</span>
+                  <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
+                </button>
+
+                {showBatchFilter && (
+                  <div className="absolute right-0 top-full mt-1 bg-white border border-slate-200 rounded-xl shadow-xl z-20 min-w-[160px] py-1.5 max-h-48 overflow-y-auto">
+                    <button
+                      onClick={() => { setBatchFilter("All"); setShowBatchFilter(false); }}
+                      className={`w-full text-left px-3.5 py-1.5 text-xs hover:bg-slate-50 transition-all ${batchFilter === "All" ? "font-bold text-brand-600 bg-brand-50/50" : "text-slate-700"}`}
+                    >
+                      All Batches
+                    </button>
+                    {uniqueBatches.map((b: any) => (
+                      <button
+                        key={b}
+                        onClick={() => { setBatchFilter(b); setShowBatchFilter(false); }}
+                        className={`w-full text-left px-3.5 py-1.5 text-xs hover:bg-slate-50 transition-all ${batchFilter === b ? "font-bold text-brand-600 bg-brand-50/50" : "text-slate-700"}`}
+                      >
+                        {b}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 
           <div className="overflow-x-auto">
-            <table className="w-full text-left">
+            <table className="w-full text-left border-collapse">
               <thead className="bg-slate-50/80 border-b border-slate-200">
                 <tr className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
                   <th className="px-6 py-4">#</th>
                   <th className="px-6 py-4">Student</th>
                   <th className="px-6 py-4">Course & Batch</th>
-                  <th className="px-6 py-4">Registration No.</th>
-                  <th className="px-6 py-4">Amount Paid</th>
-                  <th className="px-6 py-4">Registered Date</th>
-                  <th className="px-6 py-4 text-right">Certificate</th>
+                  <th className="px-6 py-4">Certificate No.</th>
+                  <th className="px-6 py-4 text-center">Batch Status</th>
+                  <th className="px-6 py-4 text-right">Certificate Action</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-slate-100 text-xs">
                 {loading ? (
-                  <tr><td colSpan={7} className="p-12 text-center"><Loader2 className="w-6 h-6 animate-spin text-brand-400 mx-auto" /></td></tr>
+                  <tr><td colSpan={6} className="p-12 text-center"><Loader2 className="w-6 h-6 animate-spin text-brand-400 mx-auto" /></td></tr>
                 ) : filtered.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="p-12 text-center">
+                    <td colSpan={6} className="p-12 text-center">
                       <div className="flex flex-col items-center gap-2">
                         <Award className="w-12 h-12 text-slate-200" />
-                        <p className="text-slate-400 font-medium">No registered students yet</p>
+                        <p className="text-slate-600 font-semibold">No certificate records found</p>
+                        <p className="text-xs text-slate-400">Students in completed batches will appear here.</p>
                       </div>
                     </td>
                   </tr>
                 ) : (
                   filtered.map((student, index) => (
-                    <tr key={student.id} className="hover:bg-slate-50/50 transition-all">
+                    <tr key={student.id} className="hover:bg-slate-50/50 transition-all group">
                       <td className="px-6 py-4 text-xs font-bold text-slate-400">{index + 1}</td>
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
@@ -207,8 +260,10 @@ export default function RegistrationList() {
                             {student.firstName?.[0]}{student.lastName?.[0]}
                           </div>
                           <div>
-                            <div className="text-sm font-bold text-slate-800">{student.firstName} {student.lastName}</div>
-                            <div className="text-xs text-slate-500">{student.email}</div>
+                            <div className="text-sm font-bold text-slate-800 group-hover:text-blue-600 transition-colors">
+                              {student.firstName} {student.lastName}
+                            </div>
+                            <div className="text-xs text-slate-400">{student.email}</div>
                           </div>
                         </div>
                       </td>
@@ -217,32 +272,23 @@ export default function RegistrationList() {
                         <div className="text-xs text-slate-400 uppercase font-bold">{student.batch}</div>
                       </td>
                       <td className="px-6 py-4">
-                        <span className="text-sm font-mono font-bold text-blue-700 bg-blue-50 px-2.5 py-1 rounded-lg">
+                        <span className="text-xs font-mono font-bold text-blue-700 bg-blue-50 px-2.5 py-1 rounded-lg border border-blue-100">
                           {student.registration_number || generateRegistrationNumber(index)}
                         </span>
                       </td>
-                      <td className="px-6 py-4">
-                        <span className="text-sm font-bold text-emerald-700">
-                          {formatCurrency(student.latestPayment?.amount_paid || student.latestPayment?.full_amount_payable || 0)}
+                      <td className="px-6 py-4 text-center">
+                        <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-50 text-emerald-700 border border-emerald-200 uppercase tracking-wider inline-flex items-center gap-1">
+                          <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                          Batch Completed
                         </span>
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="flex items-center gap-2 text-sm text-slate-600">
-                          <Calendar className="w-4 h-4 text-slate-400" />
-                          {student.latestPayment?.paid_at
-                            ? new Date(student.latestPayment.paid_at).toLocaleDateString()
-                            : student.enrollmentDate
-                            ? new Date(student.enrollmentDate).toLocaleDateString()
-                            : "—"}
-                        </div>
                       </td>
                       <td className="px-6 py-4 text-right">
                         <button
                           onClick={() => openCertificate(student, index)}
-                          className="flex items-center gap-1.5 ml-auto px-3 py-1.5 rounded-lg bg-blue-50 text-blue-700 hover:bg-blue-100 transition-all text-xs font-bold border border-blue-200"
+                          className="flex items-center gap-1.5 ml-auto px-3.5 py-1.5 rounded-xl bg-blue-600 text-white hover:bg-blue-700 transition-all text-xs font-bold shadow-xs cursor-pointer"
                         >
-                          <Download className="w-3.5 h-3.5" />
-                          Certificate
+                          <Award className="w-3.5 h-3.5" />
+                          View Certificate
                         </button>
                       </td>
                     </tr>
@@ -259,16 +305,16 @@ export default function RegistrationList() {
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col">
             <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 flex-shrink-0">
-              <h3 className="font-bold text-slate-800">Registration Certificate</h3>
+              <h3 className="font-bold text-slate-800">Course Completion Certificate</h3>
               <div className="flex items-center gap-2">
                 <button
                   onClick={handlePrint}
-                  className="flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 transition-all"
+                  className="flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 transition-all cursor-pointer"
                 >
                   <Printer className="w-4 h-4" />
                   Print / Save PDF
                 </button>
-                <button onClick={() => setShowCertificate(false)} className="text-slate-400 hover:text-slate-600 text-xl leading-none px-2">×</button>
+                <button onClick={() => setShowCertificate(false)} className="text-slate-400 hover:text-slate-600 text-xl leading-none px-2 cursor-pointer">×</button>
               </div>
             </div>
             <div className="overflow-y-auto flex-1 p-4">
@@ -310,7 +356,7 @@ function Certificate({ student }: { student: any }) {
         </h1>
         <div style={{ width: "80px", height: "3px", background: "#1d4ed8", margin: "12px auto" }} />
         <h2 style={{ fontSize: "20px", color: "#1d4ed8", margin: "8px 0 0 0", fontWeight: "700", letterSpacing: "2px" }}>
-          CERTIFICATE OF REGISTRATION
+          CERTIFICATE OF COURSE COMPLETION
         </h2>
       </div>
 
@@ -323,9 +369,9 @@ function Certificate({ student }: { student: any }) {
           {student.firstName} {student.lastName}
         </p>
         <p style={{ fontSize: "14px", color: "#475569", lineHeight: "1.8", marginTop: "8px" }}>
-          has been officially registered as a student of
+          has successfully completed the prescribed course of study in
         </p>
-        <p style={{ fontSize: "16px", fontWeight: "bold", color: "#1d4ed8", margin: "4px 0" }}>
+        <p style={{ fontSize: "18px", fontWeight: "bold", color: "#1d4ed8", margin: "4px 0" }}>
           {student.course}
         </p>
         <p style={{ fontSize: "13px", color: "#64748b" }}>
@@ -335,24 +381,24 @@ function Certificate({ student }: { student: any }) {
 
       {/* Details Grid */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px", background: "white", padding: "20px", borderRadius: "12px", marginBottom: "32px" }}>
-        <Detail label="Registration Number" value={student.registration_number} />
+        <Detail label="Certificate Number" value={student.registration_number} />
         <Detail label="Student ID" value={student.id?.slice(0, 8).toUpperCase()} />
         <Detail label="NIC / Passport" value={student.nic || student.passport || "—"} />
-        <Detail label="Date of Registration" value={paidDate} />
-        <Detail label="Payment Reference" value={student.latestPayment?.payment_reference || "—"} />
-        <Detail label="Certificate Issued" value={today} />
+        <Detail label="Completion Date" value={paidDate} />
+        <Detail label="Batch Status" value="COMPLETED" />
+        <Detail label="Date Issued" value={today} />
       </div>
 
       {/* Footer */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "32px", marginTop: "16px" }}>
         <div style={{ textAlign: "center" }}>
           <div style={{ borderTop: "1px solid #94a3b8", paddingTop: "8px" }}>
-            <p style={{ fontSize: "12px", color: "#64748b" }}>Student Signature</p>
+            <p style={{ fontSize: "12px", color: "#64748b" }}>Director / Registrar, MPMA</p>
           </div>
         </div>
         <div style={{ textAlign: "center" }}>
           <div style={{ borderTop: "1px solid #94a3b8", paddingTop: "8px" }}>
-            <p style={{ fontSize: "12px", color: "#64748b" }}>Registrar, MPMA</p>
+            <p style={{ fontSize: "12px", color: "#64748b" }}>Head of Maritime Studies</p>
           </div>
         </div>
       </div>

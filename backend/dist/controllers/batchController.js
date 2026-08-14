@@ -14,7 +14,16 @@ const Batch_1 = require("../models/Batch");
 const Course_1 = require("../models/Course");
 const getBatches = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
+        const { courseId, status } = req.query;
+        const where = {};
+        if (courseId) {
+            where.courseId = courseId;
+        }
+        if (status) {
+            where.status = status;
+        }
         const batches = yield Batch_1.Batch.findAll({
+            where,
             include: [{ model: Course_1.Course, as: 'course' }],
             order: [['batchCode', 'ASC']]
         });
@@ -43,7 +52,7 @@ const getBatchById = (req, res) => __awaiter(void 0, void 0, void 0, function* (
 exports.getBatchById = getBatchById;
 const createBatch = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        const { batchCode, courseId, maxStudents, currentStudents } = req.body;
+        const { batchCode, courseId, maxStudents, currentStudents, schedule, mode, type } = req.body;
         // Validate if course exists
         const course = yield Course_1.Course.findByPk(courseId);
         if (!course) {
@@ -66,7 +75,10 @@ const createBatch = (req, res) => __awaiter(void 0, void 0, void 0, function* ()
         if (current === max) {
             status = 'Full';
         }
-        const batch = yield Batch_1.Batch.create(Object.assign(Object.assign({}, req.body), { currentStudents: current, maxStudents: max, status }));
+        const created = yield Batch_1.Batch.create(Object.assign(Object.assign({}, req.body), { schedule: schedule || course.schedule || 'Weekday', mode: mode || course.mode || 'Physical', type: type || course.type || 'Full Time', currentStudents: current, maxStudents: max, status }));
+        const batch = yield Batch_1.Batch.findByPk(created.id, {
+            include: [{ model: Course_1.Course, as: 'course' }]
+        });
         res.status(201).json(batch);
     }
     catch (error) {

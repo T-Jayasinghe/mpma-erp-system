@@ -21,6 +21,10 @@ import {
   RotateCcw,
   Filter,
   Download,
+  Paperclip,
+  FileText,
+  X,
+  ExternalLink,
 } from "lucide-react";
 import type { PaymentStatus, StudentRecord } from "../types/student";
 import {
@@ -136,6 +140,37 @@ export default function StudentList() {
     payment: StudentRecord["latestPayment"];
     studentName: string;
   } | null>(null);
+
+  // ── Document Viewer Modal State ──────────────────────────────────
+  const [docModal, setDocModal] = useState<{
+    studentId: string;
+    studentName: string;
+    documents: Array<{ id: number; document_type: string; file_name: string; mime_type: string }>;
+    loading: boolean;
+  } | null>(null);
+
+  const openDocModal = async (student: StudentRecord, name: string) => {
+    setDocModal({ studentId: student.id, studentName: name, documents: [], loading: true });
+    try {
+      const data = await fetchApi(`/students/application/${student.id}`);
+      const docs: Array<{ id: number; document_type: string; file_name: string; mime_type: string }> =
+        (data.student?.documents ?? []).map((d: any) => ({
+          id: d.id,
+          document_type: d.document_type,
+          file_name: d.file_name,
+          mime_type: d.mime_type,
+        }));
+      setDocModal({ studentId: student.id, studentName: name, documents: docs, loading: false });
+    } catch {
+      toast.error("Failed to load documents");
+      setDocModal(null);
+    }
+  };
+
+  const getDocumentUrl = (studentId: string, docId: number, download = false) =>
+    `http://localhost:5001/api/students/application/${studentId}/documents/${docId}${
+      download ? "?download=1" : ""
+    }`;
 
   useEffect(() => {
     loadStudents(emptyFilters);
@@ -613,6 +648,13 @@ export default function StudentList() {
                             >
                               <Download className="w-4 h-4" />
                             </button>
+                            <button
+                              title="View Documents"
+                              onClick={() => openDocModal(student, fullName)}
+                              className="p-2 text-purple-600 hover:bg-purple-50 rounded-lg transition-all"
+                            >
+                              <Paperclip className="w-4 h-4" />
+                            </button>
                           </div>
                         </td>
                       </tr>
@@ -631,6 +673,133 @@ export default function StudentList() {
           studentName={receiptPayment.studentName}
           onClose={() => setReceiptPayment(null)}
         />
+      )}
+
+      {/* ═══ DOCUMENT VIEWER MODAL ═══ */}
+      {docModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden border border-slate-200">
+
+            {/* Header */}
+            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-gradient-to-r from-purple-50 to-white shrink-0">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-purple-100 text-purple-700 rounded-xl">
+                  <Paperclip className="w-4 h-4" />
+                </div>
+                <div>
+                  <h2 className="text-base font-bold text-slate-800">Uploaded Documents</h2>
+                  <p className="text-xs text-slate-500 font-medium">
+                    {docModal.studentName}
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setDocModal(null)}
+                className="p-2 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Body */}
+            <div className="flex-1 overflow-y-auto px-6 py-5">
+              {docModal.loading ? (
+                <div className="flex flex-col items-center justify-center py-16 text-slate-400">
+                  <Loader2 className="w-8 h-8 animate-spin mb-3 text-purple-500" />
+                  <p className="text-sm font-medium">Loading documents...</p>
+                </div>
+              ) : docModal.documents.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-16 text-slate-400">
+                  <FileText className="w-10 h-10 mb-3 text-slate-300" />
+                  <p className="text-sm font-semibold text-slate-500">No documents uploaded</p>
+                  <p className="text-xs text-slate-400 mt-1">This student has not submitted any documents yet.</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {docModal.documents.map((doc) => {
+                    const isImage = doc.mime_type?.startsWith("image/");
+                    const isPdf = doc.mime_type === "application/pdf";
+                    const viewUrl = getDocumentUrl(docModal.studentId, doc.id);
+                    const downloadUrl = getDocumentUrl(docModal.studentId, doc.id, true);
+
+                    return (
+                      <div
+                        key={doc.id}
+                        className="border border-slate-200 rounded-2xl overflow-hidden bg-slate-50 hover:border-purple-200 transition-colors"
+                      >
+                        {/* Doc header */}
+                        <div className="flex items-center justify-between px-4 py-3 bg-white border-b border-slate-100">
+                          <div className="flex items-center gap-3 min-w-0">
+                            <div className={`p-2 rounded-lg ${isImage ? "bg-blue-50 text-blue-600" : isPdf ? "bg-red-50 text-red-600" : "bg-slate-100 text-slate-500"}`}>
+                              <FileText className="w-4 h-4" />
+                            </div>
+                            <div className="min-w-0">
+                              <p className="text-sm font-bold text-slate-800 truncate">{doc.document_type}</p>
+                              <p className="text-xs text-slate-400 truncate">{doc.file_name}</p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2 shrink-0 ml-3">
+                            <a
+                              href={viewUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              title="View in new tab"
+                              className="p-1.5 text-purple-600 hover:bg-purple-50 rounded-lg transition-colors"
+                            >
+                              <ExternalLink className="w-4 h-4" />
+                            </a>
+                            <a
+                              href={downloadUrl}
+                              download={doc.file_name}
+                              title="Download"
+                              className="p-1.5 text-slate-500 hover:bg-slate-100 rounded-lg transition-colors"
+                            >
+                              <Download className="w-4 h-4" />
+                            </a>
+                          </div>
+                        </div>
+
+                        {/* Preview */}
+                        {isImage && (
+                          <div className="p-3 flex justify-center bg-slate-50">
+                            <img
+                              src={viewUrl}
+                              alt={doc.document_type}
+                              className="max-h-48 rounded-lg object-contain border border-slate-200 shadow-sm"
+                              onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                            />
+                          </div>
+                        )}
+                        {isPdf && (
+                          <div className="p-3 bg-slate-50">
+                            <iframe
+                              src={viewUrl}
+                              title={doc.file_name}
+                              className="w-full h-48 rounded-lg border border-slate-200"
+                            />
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="px-6 py-4 border-t border-slate-100 bg-slate-50/50 flex items-center justify-between shrink-0">
+              <span className="text-xs text-slate-500 font-medium">
+                {docModal.loading ? "Loading..." : `${docModal.documents.length} document${docModal.documents.length !== 1 ? "s" : ""} found`}
+              </span>
+              <button
+                onClick={() => setDocModal(null)}
+                className="px-4 py-2 rounded-xl text-sm font-semibold text-slate-600 bg-white border border-slate-200 hover:bg-slate-100 transition-colors"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </DashboardLayout>
   );

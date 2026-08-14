@@ -20,7 +20,6 @@ import {
   GraduationCap,
   CreditCard,
   ClipboardCheck,
-  ShieldCheck,
   Award,
   Settings
 } from "lucide-react";
@@ -243,9 +242,8 @@ export default function DashboardLayout({ children }: any) {
             <div className="ml-4 pl-4 border-l border-slate-800 space-y-1 mt-1 transition-all">
               {[
                 { path: "/student-management/enrollment", label: "Enrollment", icon: ClipboardCheck },
-                { path: "/student-management/verification", label: "Verification", icon: ShieldCheck },
                 { path: "/student-management/payment", label: "Payment", icon: CreditCard },
-                { path: "/student-management/registration", label: "Registration", icon: Award },
+                { path: "/student-management/registration", label: "Certificate", icon: Award },
                 { path: "/student-management/students", label: "All Students", icon: Users },
               ].map((item) => {
                 const isActive = location.pathname === item.path || location.pathname.startsWith(`${item.path}/`);

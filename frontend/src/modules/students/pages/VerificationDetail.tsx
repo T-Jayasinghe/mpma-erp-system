@@ -23,6 +23,7 @@ import {
   Eye,
   Download,
   Award,
+  CreditCard,
 } from "lucide-react";
 import { BASE_URL, fetchApi } from "../../../utils/api";
 
@@ -136,7 +137,7 @@ export default function VerificationDetail() {
         if (res.emailSent) {
           toast.success("Application approved and payment email sent to student.");
           setShowApproveModal(false);
-          navigate("/student-management/verification");
+          navigate("/student-management/enrollment");
         } else {
           toast.warning(res.message || "Application approved, but the payment email could not be sent. Check SMTP settings and retry the email.");
           setApprovalCompleted(true);
@@ -158,7 +159,7 @@ export default function VerificationDetail() {
       if (res.success && res.emailSent) {
         toast.success("Payment email sent to student.");
         setShowApproveModal(false);
-        navigate("/student-management/verification");
+        navigate("/student-management/enrollment");
       }
     } catch (error: any) {
       toast.error(error.message || "Email could not be sent");
@@ -178,7 +179,7 @@ export default function VerificationDetail() {
       if (res.success) {
         toast.success("Correction requested. Student notified via email.");
         setShowCorrectionModal(false);
-        navigate("/student-management/verification");
+        navigate("/student-management/enrollment");
       } else {
         toast.error(res.message || "Failed");
       }
@@ -200,7 +201,7 @@ export default function VerificationDetail() {
       if (res.success) {
         toast.success("Application rejected. Student notified via email.");
         setShowRejectionModal(false);
-        navigate("/student-management/verification");
+        navigate("/student-management/enrollment");
       } else {
         toast.error(res.message || "Failed");
       }
@@ -235,7 +236,7 @@ export default function VerificationDetail() {
         {/* Back + Header */}
         <div className="flex items-center gap-4">
           <button
-            onClick={() => navigate("/student-management/verification")}
+            onClick={() => navigate("/student-management/enrollment")}
             className="p-2 rounded-xl hover:bg-slate-100 text-slate-500 transition-all"
           >
             <ArrowLeft className="w-5 h-5" />
@@ -275,6 +276,18 @@ export default function VerificationDetail() {
                 <InfoRow icon={<User className="w-4 h-4" />} label="Nationality / Country" value={[student.nationality, student.country_of_origin].filter(Boolean).join(' / ') || "—"} />
                 <InfoRow icon={<BookOpen className="w-4 h-4" />} label="Course" value={student.course} />
                 <InfoRow icon={<BookOpen className="w-4 h-4" />} label="Batch" value={student.batch} />
+                <InfoRow 
+                  icon={<CreditCard className="w-4 h-4 text-emerald-600" />} 
+                  label="Chosen Payment Method Option" 
+                  value={
+                    student.payment_plan === "INSTALLMENT_2"
+                      ? `2 Installments (${student.installment_breakdown || "Split"})`
+                      : student.payment_plan === "INSTALLMENT_3"
+                      ? `3 Installments (${student.installment_breakdown || "Split"})`
+                      : "Full Payment (1 Payment)"
+                  } 
+                  className="sm:col-span-2" 
+                />
                 {student.studentCategory === 'SLPA Employee' && <>
                   <InfoRow icon={<FileText className="w-4 h-4" />} label="Service / EPF" value={[student.service_number, student.epf_number].filter(Boolean).join(' / ') || "—"} />
                   <InfoRow icon={<User className="w-4 h-4" />} label="Department / Position" value={[student.department, student.slpa_position].filter(Boolean).join(' / ') || "—"} />
@@ -304,8 +317,16 @@ export default function VerificationDetail() {
               const other = qualData?.otherQualifications || [];
               const hasOL = ol && (ol.year || ol.indexNumber || (ol.subjects && ol.subjects.length > 0));
               const hasAL = al && (al.year || al.indexNumber || al.zScore || (al.subjects && al.subjects.length > 0));
+              const olAttemptsList: any[] = Array.isArray(qualData?.olAttempts) && qualData.olAttempts.length > 0
+                ? qualData.olAttempts
+                : (hasOL ? [{ attemptName: '1st Attempt', ...ol }] : []);
+
+              const alAttemptsList: any[] = Array.isArray(qualData?.alAttempts) && qualData.alAttempts.length > 0
+                ? qualData.alAttempts
+                : (hasAL ? [{ attemptName: '1st Attempt', ...al }] : []);
+
               const hasOther = Array.isArray(other) && other.length > 0;
-              const hasAnyQual = hasOL || hasAL || hasOther;
+              const hasAnyQual = olAttemptsList.length > 0 || alAttemptsList.length > 0 || hasOther;
 
               return (
                 <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden space-y-4">
@@ -330,24 +351,24 @@ export default function VerificationDetail() {
                     ) : (
                       <>
                         {/* O/L Section */}
-                        {hasOL && (
-                          <div className="bg-slate-50/80 rounded-2xl p-5 border border-slate-200/70 space-y-3">
+                        {olAttemptsList.length > 0 && olAttemptsList.map((olAtt: any, idx: number) => (
+                          <div key={idx} className="bg-slate-50/80 rounded-2xl p-5 border border-slate-200/70 space-y-3">
                             <div className="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-slate-200/70">
                               <span className="font-bold text-slate-800 text-xs flex items-center gap-2">
                                 <span className="w-2 h-2 rounded-full bg-blue-600"></span>
-                                G.C.E. Ordinary Level (O/L)
+                                G.C.E. Ordinary Level (O/L) {olAtt.attemptName ? `— ${olAtt.attemptName}` : ''}
                               </span>
                               <div className="flex items-center gap-3 text-xs text-slate-500 font-semibold">
-                                {ol.year && <span>Year: <strong className="text-slate-800">{ol.year}</strong></span>}
-                                {ol.indexNumber && <span>Index: <strong className="text-slate-800">{ol.indexNumber}</strong></span>}
-                                {ol.medium && <span>Medium: <strong className="text-slate-800">{ol.medium}</strong></span>}
+                                {olAtt.year && <span>Year: <strong className="text-slate-800">{olAtt.year}</strong></span>}
+                                {olAtt.indexNumber && <span>Index: <strong className="text-slate-800">{olAtt.indexNumber}</strong></span>}
+                                {olAtt.medium && <span>Medium: <strong className="text-slate-800">{olAtt.medium}</strong></span>}
                               </div>
                             </div>
 
-                            {ol.subjects && ol.subjects.length > 0 ? (
+                            {olAtt.subjects && olAtt.subjects.length > 0 ? (
                               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
-                                {ol.subjects.map((sub: any, idx: number) => (
-                                  <div key={idx} className="bg-white px-3 py-2 rounded-xl border border-slate-200 flex items-center justify-between text-xs shadow-2xs">
+                                {olAtt.subjects.map((sub: any, subIdx: number) => (
+                                  <div key={subIdx} className="bg-white px-3 py-2 rounded-xl border border-slate-200 flex items-center justify-between text-xs shadow-2xs">
                                     <span className="font-semibold text-slate-700 truncate pr-2">{sub.subject}</span>
                                     <span className={`px-2 py-0.5 rounded font-black text-xs shrink-0 ${
                                       sub.grade === 'A' ? 'bg-emerald-100 text-emerald-800' :
@@ -362,30 +383,30 @@ export default function VerificationDetail() {
                                 ))}
                               </div>
                             ) : (
-                              <p className="text-xs text-slate-400 italic">No O/L subject grades listed.</p>
+                              <p className="text-xs text-slate-400 italic">No O/L subject grades listed for this attempt.</p>
                             )}
                           </div>
-                        )}
+                        ))}
 
                         {/* A/L Section */}
-                        {hasAL && (
-                          <div className="bg-slate-50/80 rounded-2xl p-5 border border-slate-200/70 space-y-3">
+                        {alAttemptsList.length > 0 && alAttemptsList.map((alAtt: any, idx: number) => (
+                          <div key={idx} className="bg-slate-50/80 rounded-2xl p-5 border border-slate-200/70 space-y-3">
                             <div className="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-slate-200/70">
                               <span className="font-bold text-slate-800 text-xs flex items-center gap-2">
                                 <span className="w-2 h-2 rounded-full bg-indigo-600"></span>
-                                G.C.E. Advanced Level (A/L) — {al.stream || 'Stream'}
+                                G.C.E. Advanced Level (A/L) {alAtt.attemptName ? `— ${alAtt.attemptName}` : ''} {alAtt.stream ? `(${alAtt.stream})` : ''}
                               </span>
                               <div className="flex items-center gap-3 text-xs text-slate-500 font-semibold">
-                                {al.year && <span>Year: <strong className="text-slate-800">{al.year}</strong></span>}
-                                {al.indexNumber && <span>Index: <strong className="text-slate-800">{al.indexNumber}</strong></span>}
-                                {al.zScore && <span>Z-Score: <strong className="text-slate-800">{al.zScore}</strong></span>}
+                                {alAtt.year && <span>Year: <strong className="text-slate-800">{alAtt.year}</strong></span>}
+                                {alAtt.indexNumber && <span>Index: <strong className="text-slate-800">{alAtt.indexNumber}</strong></span>}
+                                {alAtt.zScore && <span>Z-Score: <strong className="text-slate-800">{alAtt.zScore}</strong></span>}
                               </div>
                             </div>
 
-                            {al.subjects && al.subjects.length > 0 ? (
+                            {alAtt.subjects && alAtt.subjects.length > 0 ? (
                               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
-                                {al.subjects.map((sub: any, idx: number) => (
-                                  <div key={idx} className="bg-white px-3 py-2 rounded-xl border border-slate-200 flex items-center justify-between text-xs shadow-2xs">
+                                {alAtt.subjects.map((sub: any, subIdx: number) => (
+                                  <div key={subIdx} className="bg-white px-3 py-2 rounded-xl border border-slate-200 flex items-center justify-between text-xs shadow-2xs">
                                     <span className="font-semibold text-slate-700 truncate pr-2">{sub.subject}</span>
                                     <span className={`px-2 py-0.5 rounded font-black text-xs shrink-0 ${
                                       sub.grade === 'A' ? 'bg-emerald-100 text-emerald-800' :
@@ -400,10 +421,10 @@ export default function VerificationDetail() {
                                 ))}
                               </div>
                             ) : (
-                              <p className="text-xs text-slate-400 italic">No A/L subject grades listed.</p>
+                              <p className="text-xs text-slate-400 italic">No A/L subject grades listed for this attempt.</p>
                             )}
                           </div>
-                        )}
+                        ))}
 
                         {/* Other Qualifications Section */}
                         {hasOther && (

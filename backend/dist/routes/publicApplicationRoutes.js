@@ -10,5 +10,6 @@ const limit = (req, res, next) => { const key = req.ip || 'unknown'; const now =
 else if (++item.count > 30)
     return res.status(429).json({ success: false, message: 'Too many requests. Please try again later.' }); next(); };
 router.get('/slpa-employees/search', limit, publicApplicationController_1.searchSlpaEmployee);
+router.get('/students/lookup-nic', limit, publicApplicationController_1.lookupStudentByNic);
 router.post('/student-applications', limit, applicationUpload_1.applicationUpload, publicApplicationController_1.submitPublicApplication);
 exports.default = router;

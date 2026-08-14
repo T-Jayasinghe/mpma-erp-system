@@ -5,6 +5,8 @@ const studentPaymentController_1 = require("../controllers/studentPaymentControl
 const router = (0, express_1.Router)();
 // POST   /api/student-payments/create            — Create a pending payment record
 router.post('/create', studentPaymentController_1.createPendingPayment);
+// POST   /api/student-payments/send-reminder     — Send installment payment reminder
+router.post('/send-reminder', studentPaymentController_1.sendPaymentReminder);
 // POST   /api/student-payments/govpay/initiate   — Initiate GovPay payment session
 router.post('/govpay/initiate', studentPaymentController_1.initiateGovPayPayment);
 // POST   /api/student-payments/govpay/callback   — GovPay webhook/callback handler

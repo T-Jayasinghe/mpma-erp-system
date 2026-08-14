@@ -5,66 +5,128 @@ import {
   CalendarCheck, 
   MonitorPlay,
   Bus,
-  TrendingUp,
   ArrowRight,
   Clock,
   PieChart,
   Calendar,
-  CheckCircle2,
-  AlertCircle
+  AlertCircle,
+  GraduationCap,
+  BookOpen,
+  CreditCard,
+  Wrench,
+  Sparkles,
+  Layers,
+  Activity,
+  FileText,
+  School,
+  ArrowUpRight,
+  CheckCircle,
+  Clock3,
+  XCircle,
+  HelpCircle,
+  ShieldCheck,
+  UserCheck
 } from "lucide-react";
 import { fetchApi } from "../utils/api";
+import { Link } from "react-router-dom";
 
 interface ActivityItem {
   id?: string | number;
   type?: string;
   title?: string;
+  subtitle?: string;
   time?: string;
   status?: string;
   [key: string]: unknown;
 }
 
+interface StudentItem {
+  id: string;
+  name: string;
+  course: string;
+  batch: string;
+  appNum: string;
+  status: string;
+  paymentStatus?: string;
+}
+
 interface SummaryData {
-  totals: {
-    auditorium: number;
-    classroom: number;
-    transport: number;
-    overall: number;
-    [key: string]: number;
+  totals?: {
+    auditorium?: number;
+    classroom?: number;
+    transport?: number;
+    overall?: number;
+    students?: number;
+    pendingApps?: number;
+    approvedApps?: number;
+    registeredStudents?: number;
+    courses?: number;
+    batches?: number;
+    lecturers?: number;
+    maintenance?: number;
+    totalRevenue?: number;
+    pendingPayments?: number;
+    classroomCount?: number;
+    vehicleCount?: number;
   };
-  todayActivities: ActivityItem[];
+  todayActivities?: ActivityItem[];
+  recentStudents?: StudentItem[];
 }
 
 const getGreetingText = () => {
   const hour = new Date().getHours();
-  if (hour < 12) return "Good morning";
-  if (hour < 18) return "Good afternoon";
-  return "Good evening";
+  if (hour < 12) return "Good Morning";
+  if (hour < 18) return "Good Afternoon";
+  return "Good Evening";
 };
 
 const getDateText = () => {
   const now = new Date();
-  const yyyy = now.getFullYear();
-  const mm = String(now.getMonth() + 1).padStart(2, '0');
-  const dd = String(now.getDate()).padStart(2, '0');
-  return `${yyyy}/${mm}/${dd}`;
+  return now.toLocaleDateString("en-US", {
+    weekday: "long",
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
 };
 
 export default function Dashboard() {
   const [greeting] = useState(getGreetingText);
   const [dateStr] = useState(getDateText);
+  const [activeTab, setActiveTab] = useState<"all" | "bookings" | "students" | "maintenance">("all");
   const [summaryData, setSummaryData] = useState<SummaryData>({
-    totals: { auditorium: 0, classroom: 0, transport: 0, overall: 0 },
-    todayActivities: []
+    totals: {
+      auditorium: 0,
+      classroom: 0,
+      transport: 0,
+      overall: 0,
+      students: 0,
+      pendingApps: 0,
+      approvedApps: 0,
+      registeredStudents: 0,
+      courses: 0,
+      batches: 0,
+      lecturers: 0,
+      maintenance: 0,
+      totalRevenue: 0,
+      pendingPayments: 0,
+      classroomCount: 0,
+      vehicleCount: 0,
+    },
+    todayActivities: [],
+    recentStudents: [],
   });
-  const userRole = localStorage.getItem("userRole") || "user";
+
+  const currentUser = JSON.parse(localStorage.getItem("user") || "{}");
+  const userName = currentUser.name || "Administrator";
+  const userRole = currentUser.role || localStorage.getItem("userRole") || "user";
 
   useEffect(() => {
     let isMounted = true;
-    fetchApi('/dashboard/stats')
+    fetchApi("/dashboard/stats")
       .then((res) => {
         const data = res as SummaryData;
-        if (isMounted && data && data.totals) {
+        if (isMounted && data) {
           setSummaryData(data);
         }
       })
@@ -76,171 +138,677 @@ export default function Dashboard() {
     };
   }, []);
 
-  const stats = [
-    { title: "Classroom Bookings", value: summaryData.totals.classroom.toString(), icon: CalendarCheck, trend: "+12%", trendUp: true, color: "text-blue-600", bg: "bg-blue-100" },
-    { title: "Transport Requests", value: summaryData.totals.transport.toString(), icon: Bus, trend: "-2%", trendUp: false, color: "text-amber-600", bg: "bg-amber-100" },
-    { title: "Auditorium Events", value: summaryData.totals.auditorium.toString(), icon: MonitorPlay, trend: "+5%", trendUp: true, color: "text-emerald-600", bg: "bg-emerald-100" },
-    { title: "Total Resources", value: summaryData.totals.overall.toString(), icon: TrendingUp, trend: "+8%", trendUp: true, color: "text-purple-600", bg: "bg-purple-100" },
-  ];
+  const totals = summaryData?.totals || {};
+  const totalRevenue = totals.totalRevenue ?? 0;
+  const classroomCount = totals.classroomCount ?? 15;
+  const vehicleCount = totals.vehicleCount ?? 4;
+  const studentsCount = totals.students ?? 0;
+  const pendingApps = totals.pendingApps ?? 0;
+  const approvedApps = totals.approvedApps ?? 0;
+  const coursesCount = totals.courses ?? 0;
+  const batchesCount = totals.batches ?? 0;
+  const lecturersCount = totals.lecturers ?? 0;
+  const overallBookings = totals.overall ?? 0;
+  const classroomBookings = totals.classroom ?? 0;
+  const transportBookings = totals.transport ?? 0;
+  const auditoriumBookings = totals.auditorium ?? 0;
+  const pendingPayments = totals.pendingPayments ?? 0;
 
-  const quickLinks = [
-    { title: "Auditorium", desc: "Manage large events", icon: MonitorPlay, link: "/auditorium-booking", color: "from-blue-500 to-indigo-600" },
-    { title: "Classrooms", desc: "Schedule lectures", icon: Users, link: "/classroom-booking", color: "from-emerald-500 to-teal-600" },
-    { title: "Transport", desc: "Book vehicles", icon: Bus, link: "/transport-booking", color: "from-orange-500 to-amber-600" },
+  const activitiesList = summaryData?.todayActivities || [];
+  const recentStudentsList = summaryData?.recentStudents || [];
+
+  // Filter activities based on tab
+  const filteredActivities = activitiesList.filter((act) => {
+    if (activeTab === "all") return true;
+    if (activeTab === "bookings") return ["Classroom", "Transport", "Auditorium"].includes(act.type || "");
+    if (activeTab === "students") return act.type === "Enrollment";
+    if (activeTab === "maintenance") return act.type === "Maintenance";
+    return true;
+  });
+
+  const getStatusBadge = (status?: string) => {
+    switch (status) {
+      case "APPROVED":
+      case "Accepted":
+      case "Active":
+      case "PAID":
+      case "Registered":
+        return (
+          <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200/60 shadow-2xs">
+            <CheckCircle className="w-3 h-3 text-emerald-500" />
+            {status}
+          </span>
+        );
+      case "PENDING_REVIEW":
+      case "Pending":
+      case "Scheduled":
+        return (
+          <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-1 rounded-full bg-amber-50 text-amber-700 border border-amber-200/60 shadow-2xs">
+            <Clock3 className="w-3 h-3 text-amber-500" />
+            {status}
+          </span>
+        );
+      case "CORRECTION_REQUESTED":
+        return (
+          <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-1 rounded-full bg-blue-50 text-blue-700 border border-blue-200/60 shadow-2xs">
+            <HelpCircle className="w-3 h-3 text-blue-500" />
+            Correction Req.
+          </span>
+        );
+      case "REJECTED":
+      case "Rejected":
+        return (
+          <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-1 rounded-full bg-rose-50 text-rose-700 border border-rose-200/60 shadow-2xs">
+            <XCircle className="w-3 h-3 text-rose-500" />
+            {status}
+          </span>
+        );
+      default:
+        return (
+          <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-1 rounded-full bg-slate-100 text-slate-700 border border-slate-200 shadow-2xs">
+            {status || "Active"}
+          </span>
+        );
+    }
+  };
+
+  const getCategoryIcon = (type?: string) => {
+    switch (type) {
+      case "Enrollment":
+        return <GraduationCap className="w-4 h-4 text-indigo-600" />;
+      case "Classroom":
+        return <School className="w-4 h-4 text-emerald-600" />;
+      case "Transport":
+        return <Bus className="w-4 h-4 text-amber-600" />;
+      case "Auditorium":
+        return <MonitorPlay className="w-4 h-4 text-blue-600" />;
+      case "Maintenance":
+        return <Wrench className="w-4 h-4 text-rose-600" />;
+      default:
+        return <Activity className="w-4 h-4 text-slate-600" />;
+    }
+  };
+
+  const academicStreams = [
+    { name: "Maritime & Seamanship", code: "MAR-SEA", icon: GraduationCap, color: "from-blue-500 to-cyan-500" },
+    { name: "Occupational Health & Safety", code: "OHS", icon: ShieldCheck, color: "from-emerald-500 to-teal-500" },
+    { name: "Port Operation & Logistics", code: "PORT-LOG", icon: Layers, color: "from-amber-500 to-orange-500" },
+    { name: "Technical Engineering", code: "TECH", icon: Wrench, color: "from-purple-500 to-indigo-500" },
+    { name: "Management & IS", code: "MGT-IS", icon: BookOpen, color: "from-rose-500 to-pink-500" },
   ];
 
   return (
     <DashboardLayout>
-      
-      {/* Hero Welcome Section */}
-      <div className="mb-8 bg-white p-8 rounded-3xl shadow-sm border border-slate-100 relative overflow-hidden flex flex-col md:flex-row md:items-center justify-between">
-        <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-brand-100/50 to-indigo-50/50 rounded-full blur-3xl -mr-20 -mt-20"></div>
-        <div className="relative z-10">
-          <h1 className="text-3xl font-extrabold text-slate-800 tracking-tight">
-            {greeting}, <span className="capitalize text-brand-600">{userRole}</span> 👋
-          </h1>
-          <p className="mt-2 text-slate-500 font-medium">
-            {dateStr} • Here's what's happening with your resources today.
-          </p>
-        </div>
-      </div>
+      <div className="space-y-8 pb-10">
 
-      {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        {stats.map((stat, idx) => {
-          const Icon = stat.icon;
-          return (
-            <div key={idx} className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 hover:shadow-md transition-shadow group">
-              <div className="flex justify-between items-start mb-4">
-                <div className={`p-3 rounded-xl ${stat.bg} ${stat.color} group-hover:scale-110 transition-transform`}>
-                  <Icon className="w-6 h-6" />
+        {/* Hero Welcome Banner */}
+        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 p-8 text-white shadow-xl border border-slate-800">
+          <div className="absolute -top-24 -right-24 w-96 h-96 bg-brand-500/20 rounded-full blur-3xl pointer-events-none"></div>
+          <div className="absolute -bottom-24 -left-24 w-96 h-96 bg-indigo-500/15 rounded-full blur-3xl pointer-events-none"></div>
+
+          <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+            <div className="space-y-2">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 backdrop-blur-md border border-white/10 text-xs font-semibold text-brand-300">
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                ERP System Online • MPMA Academy
+              </div>
+              <h1 className="text-3xl lg:text-4xl font-black tracking-tight text-white">
+                {greeting}, <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-300 via-sky-200 to-indigo-200">{userName}</span>
+              </h1>
+              <p className="text-slate-300 text-sm font-medium flex items-center gap-2">
+                <Calendar className="w-4 h-4 text-brand-400" />
+                {dateStr} • Real-time Operations & Resource Management Center
+              </p>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-3">
+              <div className="bg-white/10 backdrop-blur-md border border-white/15 px-4 py-2.5 rounded-2xl flex items-center gap-3">
+                <div className="p-2 bg-emerald-500/20 rounded-xl text-emerald-400">
+                  <UserCheck className="w-5 h-5" />
                 </div>
-                <div className={`flex items-center gap-1 text-sm font-semibold px-2 py-1 rounded-md ${
-                  stat.trendUp ? 'text-emerald-700 bg-emerald-50' : 'text-red-700 bg-red-50'
-                }`}>
-                  {stat.trend}
+                <div>
+                  <p className="text-[10px] uppercase font-bold text-slate-300 tracking-wider">Access Role</p>
+                  <p className="text-sm font-bold capitalize text-white">{userRole}</p>
                 </div>
+              </div>
+
+              <Link
+                to="/student-management/enrollment"
+                className="inline-flex items-center gap-2 px-5 py-3 rounded-2xl bg-brand-600 hover:bg-brand-500 text-white font-bold text-sm shadow-lg shadow-brand-600/30 transition-all hover:scale-[1.02] active:scale-95"
+              >
+                <GraduationCap className="w-4 h-4" />
+                Review Applications
+              </Link>
+            </div>
+          </div>
+        </div>
+
+        {/* 4 Executive KPI Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+
+          {/* Card 1: Student Applications */}
+          <div className="bg-white rounded-3xl p-6 shadow-sm border border-slate-100 hover:shadow-xl hover:-translate-y-1 transition-all group relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-50 rounded-full blur-2xl -mr-10 -mt-10 group-hover:bg-indigo-100 transition-colors"></div>
+            <div className="relative z-10 space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="p-3.5 rounded-2xl bg-indigo-50 text-indigo-600 group-hover:scale-110 transition-transform shadow-xs">
+                  <GraduationCap className="w-6 h-6" />
+                </div>
+                <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-indigo-50 text-indigo-700">
+                  Applications
+                </span>
               </div>
               <div>
-                <h3 className="text-slate-500 text-sm font-medium">{stat.title}</h3>
-                <p className="text-3xl font-bold text-slate-800 mt-1">{stat.value}</p>
+                <p className="text-slate-400 text-xs font-bold uppercase tracking-wider">Student Applications</p>
+                <h3 className="text-3xl font-black text-slate-800 tracking-tight mt-1">
+                  {studentsCount}
+                </h3>
+              </div>
+              <div className="flex items-center gap-2 pt-2 border-t border-slate-100 text-xs font-semibold text-slate-500">
+                <span className="text-amber-600 font-bold bg-amber-50 px-2 py-0.5 rounded-md">
+                  {pendingApps} Pending
+                </span>
+                <span>•</span>
+                <span className="text-emerald-600 font-bold bg-emerald-50 px-2 py-0.5 rounded-md">
+                  {approvedApps} Approved
+                </span>
               </div>
             </div>
-          )
-        })}
-      </div>
-
-      {/* Permanent Information Boxes */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
-        
-        {/* Today's Schedule Box */}
-        <div className="lg:col-span-2 bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden flex flex-col h-[500px]">
-          <div className="p-6 border-b border-slate-50 flex items-center gap-3 bg-slate-50/30">
-            <div className="p-2 bg-brand-50 rounded-xl text-brand-600">
-              <Calendar className="w-5 h-5" />
-            </div>
-            <h2 className="text-lg font-bold text-slate-800">Today's Works & Schedule</h2>
           </div>
-          
-          <div className="flex-1 overflow-y-auto p-6 space-y-4 scrollbar-hide">
-            {summaryData.todayActivities.length > 0 ? (
-              summaryData.todayActivities.map((act, idx) => (
-                <div key={idx} className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-100 hover:border-brand-200 transition-all group">
-                  <div className="flex items-center gap-4">
-                    <div className={`w-1.5 h-12 rounded-full ${
-                      act.type === 'Maintenance' ? 'bg-amber-400' : 
-                      act.type === 'Classroom' ? 'bg-emerald-400' :
-                      act.type === 'Transport' ? 'bg-orange-400' : 'bg-blue-400'
-                    }`}></div>
-                    <div>
-                      <p className="text-[10px] font-black text-slate-400 tracking-widest uppercase mb-0.5">{act.type}</p>
-                      <h4 className="font-bold text-slate-800 group-hover:text-brand-600 transition-colors truncate max-w-[200px] md:max-w-md">{act.title}</h4>
-                      <div className="flex items-center gap-2 mt-1">
-                        <Clock className="w-3.5 h-3.5 text-slate-400" />
-                        <span className="text-xs text-slate-500 font-bold">{act.time}</span>
-                      </div>
-                    </div>
-                  </div>
-                  <span className={`text-[10px] font-black px-3 py-1.5 rounded-xl uppercase tracking-widest bg-white border border-slate-100 shadow-sm ${
-                    act.status === 'Accepted' || act.status === 'Active' ? 'text-emerald-600' : 
-                    act.status === 'Pending' ? 'text-amber-600' : 'text-slate-500'
-                  }`}>
-                    {act.status}
-                  </span>
+
+          {/* Card 2: Academic & Batches */}
+          <div className="bg-white rounded-3xl p-6 shadow-sm border border-slate-100 hover:shadow-xl hover:-translate-y-1 transition-all group relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-50 rounded-full blur-2xl -mr-10 -mt-10 group-hover:bg-emerald-100 transition-colors"></div>
+            <div className="relative z-10 space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="p-3.5 rounded-2xl bg-emerald-50 text-emerald-600 group-hover:scale-110 transition-transform shadow-xs">
+                  <BookOpen className="w-6 h-6" />
                 </div>
-              ))
-            ) : (
-              <div className="h-full flex flex-col items-center justify-center text-center opacity-60">
-                <AlertCircle className="w-12 h-12 text-slate-200 mb-3" />
-                <p className="text-slate-400 font-bold">No tasks or bookings for today</p>
-                <p className="text-slate-300 text-xs mt-1">Resources are currently available.</p>
+                <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700">
+                  Academics
+                </span>
               </div>
-            )}
-          </div>
-        </div>
-
-        {/* Statistics & Overview Box */}
-        <div className="bg-white rounded-3xl shadow-sm border border-slate-100 p-6 flex flex-col h-[500px]">
-          <div className="flex items-center gap-3 mb-8">
-            <div className="p-2 bg-indigo-50 rounded-xl text-indigo-600">
-              <PieChart className="w-5 h-5" />
+              <div>
+                <p className="text-slate-400 text-xs font-bold uppercase tracking-wider">Active Courses & Batches</p>
+                <h3 className="text-3xl font-black text-slate-800 tracking-tight mt-1">
+                  {coursesCount} <span className="text-lg font-bold text-slate-400">/ {batchesCount} Batches</span>
+                </h3>
+              </div>
+              <div className="flex items-center gap-2 pt-2 border-t border-slate-100 text-xs font-semibold text-slate-500">
+                <span className="text-emerald-700 font-bold">
+                  {lecturersCount} Lecturers Assigned
+                </span>
+              </div>
             </div>
-            <h2 className="text-lg font-bold text-slate-800">Booking Summary</h2>
           </div>
 
-          <div className="space-y-6 flex-1">
-             {[
-                { label: "Classrooms", count: summaryData.totals.classroom, color: "text-emerald-600", bg: "bg-emerald-50", icon: CheckCircle2 },
-                { label: "Transport", count: summaryData.totals.transport, color: "text-orange-600", bg: "bg-orange-50", icon: Bus },
-                { label: "Auditorium", count: summaryData.totals.auditorium, color: "text-blue-600", bg: "bg-blue-50", icon: MonitorPlay },
-                { label: "Overall Total", count: summaryData.totals.overall, color: "text-slate-700", bg: "bg-slate-100", icon: TrendingUp },
-              ].map((item, i) => (
-                <div key={i} className={`p-4 rounded-2xl border border-slate-50 shadow-sm ${item.bg}`}>
-                  <div className="flex justify-between items-center mb-1">
-                    <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">{item.label}</span>
-                    <item.icon className={`w-4 h-4 ${item.color}`} />
-                  </div>
-                  <p className={`text-3xl font-black ${item.color}`}>{item.count}</p>
+          {/* Card 3: Facilities & Resource Bookings */}
+          <div className="bg-white rounded-3xl p-6 shadow-sm border border-slate-100 hover:shadow-xl hover:-translate-y-1 transition-all group relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-sky-50 rounded-full blur-2xl -mr-10 -mt-10 group-hover:bg-sky-100 transition-colors"></div>
+            <div className="relative z-10 space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="p-3.5 rounded-2xl bg-sky-50 text-sky-600 group-hover:scale-110 transition-transform shadow-xs">
+                  <CalendarCheck className="w-6 h-6" />
                 </div>
-              ))}
+                <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-sky-50 text-sky-700">
+                  Resource Bookings
+                </span>
+              </div>
+              <div>
+                <p className="text-slate-400 text-xs font-bold uppercase tracking-wider">Total Bookings</p>
+                <h3 className="text-3xl font-black text-slate-800 tracking-tight mt-1">
+                  {overallBookings}
+                </h3>
+              </div>
+              <div className="flex items-center gap-1.5 pt-2 border-t border-slate-100 text-[11px] font-bold text-slate-500">
+                <span className="text-blue-600">Class: {classroomBookings}</span>
+                <span>•</span>
+                <span className="text-amber-600">Bus: {transportBookings}</span>
+                <span>•</span>
+                <span className="text-emerald-600">Aud: {auditoriumBookings}</span>
+              </div>
+            </div>
           </div>
 
-          <div className="mt-6 pt-6 border-t border-slate-50 text-center">
-             <p className="text-xs font-medium text-slate-400">Updates in real-time based on approvals</p>
+          {/* Card 4: Financial & Revenue */}
+          <div className="bg-white rounded-3xl p-6 shadow-sm border border-slate-100 hover:shadow-xl hover:-translate-y-1 transition-all group relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-amber-50 rounded-full blur-2xl -mr-10 -mt-10 group-hover:bg-amber-100 transition-colors"></div>
+            <div className="relative z-10 space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="p-3.5 rounded-2xl bg-amber-50 text-amber-600 group-hover:scale-110 transition-transform shadow-xs">
+                  <CreditCard className="w-6 h-6" />
+                </div>
+                <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-amber-50 text-amber-700">
+                  Revenue
+                </span>
+              </div>
+              <div>
+                <p className="text-slate-400 text-xs font-bold uppercase tracking-wider">Total Payments Collected</p>
+                <h3 className="text-2xl font-black text-slate-800 tracking-tight mt-1">
+                  LKR {totalRevenue.toLocaleString()}
+                </h3>
+              </div>
+              <div className="flex items-center gap-2 pt-2 border-t border-slate-100 text-xs font-semibold text-slate-500">
+                <span className="text-amber-700 font-bold bg-amber-50 px-2 py-0.5 rounded-md">
+                  {pendingPayments} Payment Requests Pending
+                </span>
+              </div>
+            </div>
           </div>
+
         </div>
-      </div>
 
-      <div className="mb-6">
-        <h2 className="text-xl font-extrabold text-slate-800 mb-4 px-1 flex items-center gap-2">
-           Explore Modules
-           <ArrowRight className="w-4 h-4 text-slate-300" />
-        </h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {quickLinks.map((link, idx) => {
-            const Icon = link.icon;
-            return (
-              <a 
-                key={idx} 
-                href={link.link}
-                className="relative overflow-hidden bg-white p-6 rounded-3xl shadow-sm border border-slate-100 hover:shadow-xl hover:-translate-y-1.5 transition-all group"
-              >
-                <div className={`absolute top-0 left-0 w-1.5 h-full bg-gradient-to-b ${link.color}`}></div>
-                <div className="flex items-center gap-4">
-                  <div className={`p-4 rounded-2xl bg-gradient-to-br ${link.color} text-white shadow-lg group-hover:scale-110 transition-transform`}>
-                    <Icon className="w-6 h-6" />
+        {/* Central Operations Hub & Side Insights */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+
+          {/* Left Column (8 cols): Activity Stream & Recent Applications */}
+          <div className="lg:col-span-8 space-y-8">
+
+            {/* Combined Activity Feed */}
+            <div className="bg-white rounded-3xl p-6 shadow-sm border border-slate-100 flex flex-col">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 pb-4 border-b border-slate-100">
+                <div className="flex items-center gap-3">
+                  <div className="p-2.5 bg-brand-50 rounded-2xl text-brand-600">
+                    <Activity className="w-5 h-5" />
                   </div>
                   <div>
-                    <h3 className="text-lg font-black text-slate-800 tracking-tight">{link.title}</h3>
-                    <p className="text-xs text-slate-500 font-bold mt-0.5">{link.desc}</p>
+                    <h2 className="text-lg font-extrabold text-slate-800">Operational Activities Feed</h2>
+                    <p className="text-xs font-medium text-slate-400">Live stream of system events, bookings & enrollments</p>
                   </div>
                 </div>
-              </a>
-            );
-          })}
-        </div>
-      </div>
 
+                {/* Filter Tabs */}
+                <div className="flex items-center p-1 bg-slate-100 rounded-2xl text-xs font-bold text-slate-600 self-start sm:self-auto">
+                  <button
+                    onClick={() => setActiveTab("all")}
+                    className={`px-3 py-1.5 rounded-xl transition-all ${
+                      activeTab === "all" ? "bg-white text-slate-900 shadow-xs" : "hover:text-slate-900"
+                    }`}
+                  >
+                    All
+                  </button>
+                  <button
+                    onClick={() => setActiveTab("bookings")}
+                    className={`px-3 py-1.5 rounded-xl transition-all ${
+                      activeTab === "bookings" ? "bg-white text-slate-900 shadow-xs" : "hover:text-slate-900"
+                    }`}
+                  >
+                    Bookings
+                  </button>
+                  <button
+                    onClick={() => setActiveTab("students")}
+                    className={`px-3 py-1.5 rounded-xl transition-all ${
+                      activeTab === "students" ? "bg-white text-slate-900 shadow-xs" : "hover:text-slate-900"
+                    }`}
+                  >
+                    Students
+                  </button>
+                  <button
+                    onClick={() => setActiveTab("maintenance")}
+                    className={`px-3 py-1.5 rounded-xl transition-all ${
+                      activeTab === "maintenance" ? "bg-white text-slate-900 shadow-xs" : "hover:text-slate-900"
+                    }`}
+                  >
+                    Maintenance
+                  </button>
+                </div>
+              </div>
+
+              {/* List */}
+              <div className="space-y-3 max-h-[420px] overflow-y-auto pr-1">
+                {filteredActivities.length > 0 ? (
+                  filteredActivities.map((act, idx) => (
+                    <div
+                      key={idx}
+                      className="p-4 rounded-2xl bg-slate-50/70 border border-slate-100 hover:border-brand-200 hover:bg-white transition-all flex items-center justify-between gap-4 group shadow-2xs"
+                    >
+                      <div className="flex items-center gap-3.5 min-w-0">
+                        <div className="p-3 bg-white rounded-2xl border border-slate-100 shadow-2xs group-hover:scale-105 transition-transform shrink-0">
+                          {getCategoryIcon(act.type)}
+                        </div>
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-2">
+                            <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">
+                              {act.type}
+                            </span>
+                            <span className="text-slate-300">•</span>
+                            <span className="text-xs font-semibold text-slate-400 flex items-center gap-1">
+                              <Clock className="w-3 h-3" />
+                              {act.time}
+                            </span>
+                          </div>
+                          <h4 className="font-bold text-slate-800 text-sm truncate group-hover:text-brand-600 transition-colors mt-0.5">
+                            {act.title}
+                          </h4>
+                          {act.subtitle && (
+                            <p className="text-xs text-slate-500 font-medium truncate mt-0.5">
+                              {act.subtitle}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="shrink-0">{getStatusBadge(act.status)}</div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="py-12 flex flex-col items-center justify-center text-center opacity-70">
+                    <AlertCircle className="w-10 h-10 text-slate-300 mb-2" />
+                    <p className="text-slate-500 font-bold text-sm">No activity items matching tab filter</p>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Recent Student Applications Table */}
+            <div className="bg-white rounded-3xl p-6 shadow-sm border border-slate-100">
+              <div className="flex items-center justify-between mb-6 pb-4 border-b border-slate-100">
+                <div className="flex items-center gap-3">
+                  <div className="p-2.5 bg-indigo-50 rounded-2xl text-indigo-600">
+                    <FileText className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h2 className="text-lg font-extrabold text-slate-800">Recent Student Applications</h2>
+                    <p className="text-xs font-medium text-slate-400">Applications requiring administrative review & verification</p>
+                  </div>
+                </div>
+
+                <Link
+                  to="/student-management/enrollment"
+                  className="text-xs font-bold text-brand-600 hover:text-brand-700 flex items-center gap-1 bg-brand-50 hover:bg-brand-100 px-3 py-1.5 rounded-xl transition-colors"
+                >
+                  View All Applications
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </Link>
+              </div>
+
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="border-b border-slate-100 text-[11px] font-extrabold uppercase tracking-wider text-slate-400 bg-slate-50/50">
+                      <th className="py-3 px-4 rounded-l-xl">App Ref</th>
+                      <th className="py-3 px-4">Student Name</th>
+                      <th className="py-3 px-4">Applied Course</th>
+                      <th className="py-3 px-4">Status</th>
+                      <th className="py-3 px-4 rounded-r-xl text-right">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 text-sm">
+                    {recentStudentsList.length > 0 ? (
+                      recentStudentsList.map((st) => (
+                        <tr key={st.id} className="hover:bg-slate-50/60 transition-colors">
+                          <td className="py-3.5 px-4 font-mono font-bold text-xs text-brand-600">
+                            {st.appNum}
+                          </td>
+                          <td className="py-3.5 px-4 font-bold text-slate-800">
+                            {st.name}
+                          </td>
+                          <td className="py-3.5 px-4 font-medium text-slate-600 text-xs">
+                            {st.course}
+                          </td>
+                          <td className="py-3.5 px-4">
+                            {getStatusBadge(st.status)}
+                          </td>
+                          <td className="py-3.5 px-4 text-right">
+                            <Link
+                              to={`/student-management/verification/${st.id}`}
+                              className="inline-flex items-center gap-1 text-xs font-bold text-indigo-600 hover:text-indigo-800 bg-indigo-50 hover:bg-indigo-100 px-2.5 py-1 rounded-lg transition-colors"
+                            >
+                              Review
+                              <ArrowUpRight className="w-3 h-3" />
+                            </Link>
+                          </td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td colSpan={5} className="py-8 text-center text-slate-400 font-medium text-xs">
+                          No student applications submitted yet.
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+          </div>
+
+          {/* Right Column (4 cols): Resource Occupancy & Performance Sidebar */}
+          <div className="lg:col-span-4 space-y-8">
+
+            {/* Resource Capacity Tracker */}
+            <div className="bg-white rounded-3xl p-6 shadow-sm border border-slate-100 space-y-6">
+              <div className="flex items-center gap-3 pb-4 border-b border-slate-100">
+                <div className="p-2.5 bg-sky-50 rounded-2xl text-sky-600">
+                  <PieChart className="w-5 h-5" />
+                </div>
+                <div>
+                  <h2 className="text-base font-extrabold text-slate-800">Facility Availability</h2>
+                  <p className="text-xs text-slate-400 font-medium">Real-time resource capacity</p>
+                </div>
+              </div>
+
+              <div className="space-y-5">
+                {/* Classrooms */}
+                <div className="space-y-2">
+                  <div className="flex justify-between text-xs font-bold">
+                    <span className="text-slate-600 flex items-center gap-1.5">
+                      <School className="w-4 h-4 text-emerald-500" />
+                      Classrooms ({classroomCount})
+                    </span>
+                    <span className="text-emerald-600">100% Operational</span>
+                  </div>
+                  <div className="w-full h-2.5 bg-slate-100 rounded-full overflow-hidden">
+                    <div className="h-full bg-emerald-500 rounded-full w-full"></div>
+                  </div>
+                </div>
+
+                {/* Transport Fleet */}
+                <div className="space-y-2">
+                  <div className="flex justify-between text-xs font-bold">
+                    <span className="text-slate-600 flex items-center gap-1.5">
+                      <Bus className="w-4 h-4 text-amber-500" />
+                      Transport Fleet ({vehicleCount} Buses)
+                    </span>
+                    <span className="text-amber-600">Active</span>
+                  </div>
+                  <div className="w-full h-2.5 bg-slate-100 rounded-full overflow-hidden">
+                    <div className="h-full bg-amber-500 rounded-full w-4/5"></div>
+                  </div>
+                </div>
+
+                {/* Main Auditorium */}
+                <div className="space-y-2">
+                  <div className="flex justify-between text-xs font-bold">
+                    <span className="text-slate-600 flex items-center gap-1.5">
+                      <MonitorPlay className="w-4 h-4 text-blue-500" />
+                      Main Auditorium
+                    </span>
+                    <span className="text-blue-600">Available</span>
+                  </div>
+                  <div className="w-full h-2.5 bg-slate-100 rounded-full overflow-hidden">
+                    <div className="h-full bg-blue-500 rounded-full w-full"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Academic Streams Quick Chips */}
+            <div className="bg-white rounded-3xl p-6 shadow-sm border border-slate-100 space-y-4">
+              <div className="flex items-center gap-3 pb-3 border-b border-slate-100">
+                <div className="p-2.5 bg-indigo-50 rounded-2xl text-indigo-600">
+                  <BookOpen className="w-5 h-5" />
+                </div>
+                <div>
+                  <h2 className="text-base font-extrabold text-slate-800">Academic Streams</h2>
+                  <p className="text-xs text-slate-400 font-medium">MPMA Maritime Disciplines</p>
+                </div>
+              </div>
+
+              <div className="space-y-2.5">
+                {academicStreams.map((st, i) => {
+                  const Icon = st.icon;
+                  return (
+                    <div
+                      key={i}
+                      className="p-3 rounded-2xl bg-slate-50 hover:bg-slate-100/80 transition-colors flex items-center justify-between gap-3 border border-slate-100/80"
+                    >
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className={`p-2 rounded-xl bg-gradient-to-br ${st.color} text-white shadow-2xs shrink-0`}>
+                          <Icon className="w-4 h-4" />
+                        </div>
+                        <div className="min-w-0">
+                          <h4 className="text-xs font-bold text-slate-800 truncate">{st.name}</h4>
+                          <span className="text-[10px] font-mono text-slate-400 font-bold">{st.code}</span>
+                        </div>
+                      </div>
+                      <span className="text-[11px] font-bold px-2 py-0.5 rounded-md bg-white text-slate-600 border border-slate-200">
+                        5 Batches
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+          </div>
+
+        </div>
+
+        {/* Bottom Module Navigator Grid */}
+        <div className="space-y-4">
+          <h2 className="text-xl font-extrabold text-slate-800 flex items-center gap-2">
+            <Sparkles className="w-5 h-5 text-brand-600" />
+            Executive Module Shortcuts
+          </h2>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+
+            <Link
+              to="/student-management/enrollment"
+              className="p-6 bg-white rounded-3xl shadow-sm border border-slate-100 hover:shadow-xl hover:-translate-y-1.5 transition-all group flex items-start justify-between relative overflow-hidden"
+            >
+              <div className="space-y-3 relative z-10">
+                <div className="p-3.5 rounded-2xl bg-indigo-50 text-indigo-600 group-hover:bg-indigo-600 group-hover:text-white transition-colors w-fit shadow-2xs">
+                  <GraduationCap className="w-6 h-6" />
+                </div>
+                <div>
+                  <h3 className="font-extrabold text-slate-800 text-base group-hover:text-indigo-600 transition-colors">
+                    Student Enrollment & Verification
+                  </h3>
+                  <p className="text-xs text-slate-500 font-medium mt-1">
+                    Review incoming student applications, check eligibility & assign registration numbers.
+                  </p>
+                </div>
+              </div>
+              <ArrowUpRight className="w-5 h-5 text-slate-300 group-hover:text-indigo-600 transition-colors shrink-0" />
+            </Link>
+
+            <Link
+              to="/classroom-booking"
+              className="p-6 bg-white rounded-3xl shadow-sm border border-slate-100 hover:shadow-xl hover:-translate-y-1.5 transition-all group flex items-start justify-between relative overflow-hidden"
+            >
+              <div className="space-y-3 relative z-10">
+                <div className="p-3.5 rounded-2xl bg-emerald-50 text-emerald-600 group-hover:bg-emerald-600 group-hover:text-white transition-colors w-fit shadow-2xs">
+                  <School className="w-6 h-6" />
+                </div>
+                <div>
+                  <h3 className="font-extrabold text-slate-800 text-base group-hover:text-emerald-600 transition-colors">
+                    Classroom Booking
+                  </h3>
+                  <p className="text-xs text-slate-500 font-medium mt-1">
+                    Schedule lecture halls, manage time slots and review room allocations.
+                  </p>
+                </div>
+              </div>
+              <ArrowUpRight className="w-5 h-5 text-slate-300 group-hover:text-emerald-600 transition-colors shrink-0" />
+            </Link>
+
+            <Link
+              to="/transport-booking"
+              className="p-6 bg-white rounded-3xl shadow-sm border border-slate-100 hover:shadow-xl hover:-translate-y-1.5 transition-all group flex items-start justify-between relative overflow-hidden"
+            >
+              <div className="space-y-3 relative z-10">
+                <div className="p-3.5 rounded-2xl bg-amber-50 text-amber-600 group-hover:bg-amber-600 group-hover:text-white transition-colors w-fit shadow-2xs">
+                  <Bus className="w-6 h-6" />
+                </div>
+                <div>
+                  <h3 className="font-extrabold text-slate-800 text-base group-hover:text-amber-600 transition-colors">
+                    Transport & Fleet
+                  </h3>
+                  <p className="text-xs text-slate-500 font-medium mt-1">
+                    Reserve campus buses, manage driver assignments & trip schedules.
+                  </p>
+                </div>
+              </div>
+              <ArrowUpRight className="w-5 h-5 text-slate-300 group-hover:text-amber-600 transition-colors shrink-0" />
+            </Link>
+
+            <Link
+              to="/auditorium-booking"
+              className="p-6 bg-white rounded-3xl shadow-sm border border-slate-100 hover:shadow-xl hover:-translate-y-1.5 transition-all group flex items-start justify-between relative overflow-hidden"
+            >
+              <div className="space-y-3 relative z-10">
+                <div className="p-3.5 rounded-2xl bg-blue-50 text-blue-600 group-hover:bg-blue-600 group-hover:text-white transition-colors w-fit shadow-2xs">
+                  <MonitorPlay className="w-6 h-6" />
+                </div>
+                <div>
+                  <h3 className="font-extrabold text-slate-800 text-base group-hover:text-blue-600 transition-colors">
+                    Auditorium Reservation
+                  </h3>
+                  <p className="text-xs text-slate-500 font-medium mt-1">
+                    Book the main academy auditorium for ceremonies & guest lectures.
+                  </p>
+                </div>
+              </div>
+              <ArrowUpRight className="w-5 h-5 text-slate-300 group-hover:text-blue-600 transition-colors shrink-0" />
+            </Link>
+
+            <Link
+              to="/manage-courses"
+              className="p-6 bg-white rounded-3xl shadow-sm border border-slate-100 hover:shadow-xl hover:-translate-y-1.5 transition-all group flex items-start justify-between relative overflow-hidden"
+            >
+              <div className="space-y-3 relative z-10">
+                <div className="p-3.5 rounded-2xl bg-purple-50 text-purple-600 group-hover:bg-purple-600 group-hover:text-white transition-colors w-fit shadow-2xs">
+                  <BookOpen className="w-6 h-6" />
+                </div>
+                <div>
+                  <h3 className="font-extrabold text-slate-800 text-base group-hover:text-purple-600 transition-colors">
+                    Course & Batch Management
+                  </h3>
+                  <p className="text-xs text-slate-500 font-medium mt-1">
+                    Configure curriculum details, batch schedules and lecturer allocations.
+                  </p>
+                </div>
+              </div>
+              <ArrowUpRight className="w-5 h-5 text-slate-300 group-hover:text-purple-600 transition-colors shrink-0" />
+            </Link>
+
+            <Link
+              to="/manage-users"
+              className="p-6 bg-white rounded-3xl shadow-sm border border-slate-100 hover:shadow-xl hover:-translate-y-1.5 transition-all group flex items-start justify-between relative overflow-hidden"
+            >
+              <div className="space-y-3 relative z-10">
+                <div className="p-3.5 rounded-2xl bg-rose-50 text-rose-600 group-hover:bg-rose-600 group-hover:text-white transition-colors w-fit shadow-2xs">
+                  <Users className="w-6 h-6" />
+                </div>
+                <div>
+                  <h3 className="font-extrabold text-slate-800 text-base group-hover:text-rose-600 transition-colors">
+                    User Management
+                  </h3>
+                  <p className="text-xs text-slate-500 font-medium mt-1">
+                    Manage administrative users, access privileges and officer roles.
+                  </p>
+                </div>
+              </div>
+              <ArrowUpRight className="w-5 h-5 text-slate-300 group-hover:text-rose-600 transition-colors shrink-0" />
+            </Link>
+
+          </div>
+        </div>
+
+      </div>
     </DashboardLayout>
   );
 }

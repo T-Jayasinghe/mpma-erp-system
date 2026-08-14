@@ -108,6 +108,8 @@ Student.init({
     epf_number: { type: db_1.DataTypes.STRING, allowNull: true },
     department: { type: db_1.DataTypes.STRING, allowNull: true },
     slpa_position: { type: db_1.DataTypes.STRING, allowNull: true },
+    payment_plan: { type: db_1.DataTypes.STRING, allowNull: true, defaultValue: 'FULL_PAYMENT' },
+    installment_breakdown: { type: db_1.DataTypes.TEXT, allowNull: true },
 }, {
     sequelize: db_1.sequelize,
     tableName: 'students',

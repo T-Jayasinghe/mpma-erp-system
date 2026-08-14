@@ -6,12 +6,16 @@ import {
   verifyPayment,
   getStudentPayments,
   getPaymentById,
+  sendPaymentReminder,
 } from '../controllers/studentPaymentController';
 
 const router = Router();
 
 // POST   /api/student-payments/create            — Create a pending payment record
 router.post('/create', createPendingPayment);
+
+// POST   /api/student-payments/send-reminder     — Send installment payment reminder
+router.post('/send-reminder', sendPaymentReminder);
 
 // POST   /api/student-payments/govpay/initiate   — Initiate GovPay payment session
 router.post('/govpay/initiate', initiateGovPayPayment);

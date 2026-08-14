@@ -13,12 +13,38 @@ export interface UserAttributes {
   canManageVehicles: boolean;
   canManageClassrooms: boolean;
   canManageMaintenance: boolean;
+  canManageCourses: boolean;
+  canManageBatches: boolean;
+  canManageLecturers: boolean;
+  canManageEnrollment: boolean;
+  canManagePayments: boolean;
+  canManageCertificates: boolean;
+  canManageStudents: boolean;
+  canManageUsers: boolean;
   phoneNumber?: string;
   isActive: boolean;
   createdAt?: string;
 }
 
-interface UserCreationAttributes extends Optional<UserAttributes, 'id'> {}
+interface UserCreationAttributes
+  extends Optional<
+    UserAttributes,
+    | 'id'
+    | 'canBookAuditorium'
+    | 'canBookClassroom'
+    | 'canBookTransport'
+    | 'canManageVehicles'
+    | 'canManageClassrooms'
+    | 'canManageMaintenance'
+    | 'canManageCourses'
+    | 'canManageBatches'
+    | 'canManageLecturers'
+    | 'canManageEnrollment'
+    | 'canManagePayments'
+    | 'canManageCertificates'
+    | 'canManageStudents'
+    | 'canManageUsers'
+  > {}
 
 export class User extends Model<UserAttributes, UserCreationAttributes> implements UserAttributes {
   public id!: string;
@@ -33,6 +59,14 @@ export class User extends Model<UserAttributes, UserCreationAttributes> implemen
   public canManageVehicles!: boolean;
   public canManageClassrooms!: boolean;
   public canManageMaintenance!: boolean;
+  public canManageCourses!: boolean;
+  public canManageBatches!: boolean;
+  public canManageLecturers!: boolean;
+  public canManageEnrollment!: boolean;
+  public canManagePayments!: boolean;
+  public canManageCertificates!: boolean;
+  public canManageStudents!: boolean;
+  public canManageUsers!: boolean;
   public phoneNumber?: string;
   public isActive!: boolean;
   public readonly createdAt!: string;
@@ -87,6 +121,38 @@ User.init(
       defaultValue: false,
     },
     canManageMaintenance: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: false,
+    },
+    canManageCourses: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: false,
+    },
+    canManageBatches: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: false,
+    },
+    canManageLecturers: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: false,
+    },
+    canManageEnrollment: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: false,
+    },
+    canManagePayments: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: false,
+    },
+    canManageCertificates: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: false,
+    },
+    canManageStudents: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: false,
+    },
+    canManageUsers: {
       type: DataTypes.BOOLEAN,
       defaultValue: false,
     },

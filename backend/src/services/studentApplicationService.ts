@@ -53,6 +53,8 @@ export async function createStudentApplication(body: any, files: Express.Multer.
       company_name: clean(body.companyName) || null, outside_position: clean(body.outsidePosition) || null,
       service_number: clean(body.serviceNumber) || null, epf_number: clean(body.epfNumber) || null, department: clean(body.department) || null,
       slpa_position: clean(body.slpaPosition) || null,
+      payment_plan: clean(body.paymentPlan) || 'FULL_PAYMENT',
+      installment_breakdown: typeof body.installmentBreakdown === 'object' ? JSON.stringify(body.installmentBreakdown) : (clean(body.installmentBreakdown) || null),
       admin_notes: typeof body.qualificationsData === 'object' ? JSON.stringify(body.qualificationsData) : (clean(body.qualificationsData || body.admin_notes) || null),
     }, { transaction });
     const applicationNumber = `MPMA-APP-${new Date().getFullYear()}-${String(await Student.count({ transaction })).padStart(6, '0')}`;

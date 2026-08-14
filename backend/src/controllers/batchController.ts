@@ -4,7 +4,16 @@ import { Course } from '../models/Course';
 
 export const getBatches = async (req: Request, res: Response) => {
   try {
+    const { courseId, status } = req.query;
+    const where: any = {};
+    if (courseId) {
+      where.courseId = courseId;
+    }
+    if (status) {
+      where.status = status;
+    }
     const batches = await Batch.findAll({
+      where,
       include: [{ model: Course, as: 'course' }],
       order: [['batchCode', 'ASC']]
     });

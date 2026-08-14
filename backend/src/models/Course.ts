@@ -16,6 +16,8 @@ export interface CourseAttributes {
   schedule?: 'Weekday' | 'Weekend';
   type?: 'Full Time' | 'Part Time';
   mode?: 'Online' | 'Physical' | 'Hybrid';
+  maxInstallments?: number;
+  installmentAmounts?: number[] | string;
 }
 
 interface CourseCreationAttributes extends Optional<CourseAttributes, 'id' | 'status'> {}
@@ -36,6 +38,8 @@ export class Course extends Model<CourseAttributes, CourseCreationAttributes> im
   public schedule?: 'Weekday' | 'Weekend';
   public type?: 'Full Time' | 'Part Time';
   public mode?: 'Online' | 'Physical' | 'Hybrid';
+  public maxInstallments?: number;
+  public installmentAmounts?: number[] | string;
 
   public readonly createdAt!: Date;
   public readonly updatedAt!: Date;
@@ -107,6 +111,15 @@ Course.init(
       type: DataTypes.ENUM('Online', 'Physical', 'Hybrid'),
       allowNull: true,
       defaultValue: 'Physical',
+    },
+    maxInstallments: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      defaultValue: 1,
+    },
+    installmentAmounts: {
+      type: DataTypes.JSON,
+      allowNull: true,
     },
   },
   {

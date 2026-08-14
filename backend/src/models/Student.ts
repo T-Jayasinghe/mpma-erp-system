@@ -48,6 +48,8 @@ export interface StudentAttributes {
   epf_number?: string | null;
   department?: string | null;
   slpa_position?: string | null;
+  payment_plan?: string | null;
+  installment_breakdown?: string | null;
 }
 
 interface StudentCreationAttributes extends Optional<
@@ -66,6 +68,7 @@ interface StudentCreationAttributes extends Optional<
   | 'registration_number'
   | 'application_number' | 'nationality' | 'country_of_origin' | 'course_id' | 'batch_id'
   | 'company_name' | 'outside_position' | 'service_number' | 'epf_number' | 'department' | 'slpa_position'
+  | 'payment_plan' | 'installment_breakdown'
 > { }
 
 export class Student extends Model<StudentAttributes, StudentCreationAttributes> implements StudentAttributes {
@@ -101,6 +104,8 @@ export class Student extends Model<StudentAttributes, StudentCreationAttributes>
   public epf_number!: string | null;
   public department!: string | null;
   public slpa_position!: string | null;
+  public payment_plan!: string | null;
+  public installment_breakdown!: string | null;
 
   public readonly createdAt!: Date;
   public readonly updatedAt!: Date;
@@ -210,6 +215,8 @@ Student.init(
     epf_number: { type: DataTypes.STRING, allowNull: true },
     department: { type: DataTypes.STRING, allowNull: true },
     slpa_position: { type: DataTypes.STRING, allowNull: true },
+    payment_plan: { type: DataTypes.STRING, allowNull: true, defaultValue: 'FULL_PAYMENT' },
+    installment_breakdown: { type: DataTypes.TEXT, allowNull: true },
   },
   {
     sequelize,

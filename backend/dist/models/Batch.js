@@ -45,6 +45,21 @@ Batch.init({
         type: db_1.DataTypes.ENUM('Available', 'Full', 'Completed'),
         defaultValue: 'Available',
     },
+    schedule: {
+        type: db_1.DataTypes.ENUM('Weekday', 'Weekend'),
+        allowNull: true,
+        defaultValue: 'Weekday',
+    },
+    mode: {
+        type: db_1.DataTypes.ENUM('Online', 'Physical', 'Hybrid'),
+        allowNull: true,
+        defaultValue: 'Physical',
+    },
+    type: {
+        type: db_1.DataTypes.ENUM('Full Time', 'Part Time'),
+        allowNull: true,
+        defaultValue: 'Full Time',
+    },
 }, {
     sequelize: db_1.sequelize,
     tableName: 'batches',

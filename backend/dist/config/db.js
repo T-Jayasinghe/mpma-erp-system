@@ -97,6 +97,38 @@ const connectDB = () => __awaiter(void 0, void 0, void 0, function* () {
         catch (migrationError) {
             console.warn('Notice: Course table column checks skipped or table does not exist yet:', migrationError.message);
         }
+        // Programmatically ensure new Batch columns exist
+        try {
+            const queryInterface = sequelize.getQueryInterface();
+            const batchTableDefinition = yield queryInterface.describeTable('batches');
+            if (!batchTableDefinition.schedule) {
+                yield queryInterface.addColumn('batches', 'schedule', {
+                    type: sequelize_1.DataTypes.ENUM('Weekday', 'Weekend'),
+                    allowNull: true,
+                    defaultValue: 'Weekday',
+                });
+                console.log('Successfully added missing column "schedule" to batches table.');
+            }
+            if (!batchTableDefinition.mode) {
+                yield queryInterface.addColumn('batches', 'mode', {
+                    type: sequelize_1.DataTypes.ENUM('Online', 'Physical', 'Hybrid'),
+                    allowNull: true,
+                    defaultValue: 'Physical',
+                });
+                console.log('Successfully added missing column "mode" to batches table.');
+            }
+            if (!batchTableDefinition.type) {
+                yield queryInterface.addColumn('batches', 'type', {
+                    type: sequelize_1.DataTypes.ENUM('Full Time', 'Part Time'),
+                    allowNull: true,
+                    defaultValue: 'Full Time',
+                });
+                console.log('Successfully added missing column "type" to batches table.');
+            }
+        }
+        catch (migrationError) {
+            console.warn('Notice: Batch table column checks skipped or table does not exist yet:', migrationError.message);
+        }
         // Programmatically ensure new Lecturer columns exist
         try {
             const queryInterface = sequelize.getQueryInterface();
@@ -157,6 +189,28 @@ const connectDB = () => __awaiter(void 0, void 0, void 0, function* () {
         }
         catch (migrationError) {
             console.warn('Notice: Lecturer table column checks skipped or table does not exist yet:', migrationError.message);
+        }
+        // Programmatically ensure new User permission columns exist
+        try {
+            const queryInterface = sequelize.getQueryInterface();
+            const userTableDefinition = yield queryInterface.describeTable('users');
+            const permCols = [
+                'canManageCourses', 'canManageBatches', 'canManageLecturers',
+                'canManageEnrollment', 'canManagePayments', 'canManageCertificates',
+                'canManageStudents', 'canManageUsers'
+            ];
+            for (const col of permCols) {
+                if (!userTableDefinition[col]) {
+                    yield queryInterface.addColumn('users', col, {
+                        type: sequelize_1.DataTypes.BOOLEAN,
+                        defaultValue: false,
+                    });
+                    console.log(`Successfully added missing column "${col}" to users table.`);
+                }
+            }
+        }
+        catch (userMigrationError) {
+            console.warn('Notice: Users table permission column checks skipped:', userMigrationError.message);
         }
         // Auto-populate BankBranch table in database if empty
         try {

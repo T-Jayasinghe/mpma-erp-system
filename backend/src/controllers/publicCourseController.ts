@@ -28,6 +28,8 @@ export const getPublicCourses = async (
         'schedule',
         'type',
         'mode',
+        'maxInstallments',
+        'installmentAmounts',
       ],
       order: [['courseName', 'ASC']],
     });
@@ -72,6 +74,8 @@ export const getPublicCourseById = async (
         'schedule',
         'type',
         'mode',
+        'maxInstallments',
+        'installmentAmounts',
       ],
     });
 

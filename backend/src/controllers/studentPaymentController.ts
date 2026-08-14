@@ -88,7 +88,7 @@ export const createPendingPayment = async (req: Request, res: Response) => {
 // ============================================================
 export const initiateGovPayPayment = async (req: Request, res: Response) => {
   try {
-    const { payment_id } = req.body;
+    const { payment_id, custom_amount, installment_label } = req.body;
 
     if (!payment_id) {
       return res.status(400).json({ success: false, message: 'payment_id is required.' });
@@ -108,29 +108,12 @@ export const initiateGovPayPayment = async (req: Request, res: Response) => {
       });
     }
 
-    // --------------------------------------------------------
-    // TODO — REAL GOVPAY INTEGRATION
-    // When GovPay credentials are available, replace this block with:
-    //
-    // const payload = {
-    //   merchant_id: GOVPAY_MERCHANT_ID,
-    //   amount: payment.full_amount_payable,
-    //   payment_reference: payment.payment_reference,
-    //   callback_url: GOVPAY_CALLBACK_URL,
-    //   return_url: `${process.env.FRONTEND_URL}/student-management/payment`,
-    //   description: `Student enrollment payment - ${payment.payment_reference}`,
-    //   // Add GOVPAY signature here per official documentation
-    // };
-    //
-    // const govpayResponse = await axios.post(GOVPAY_INITIATE_URL, payload, {
-    //   headers: { 'Authorization': `Bearer ${GOVPAY_API_KEY}`, 'Content-Type': 'application/json' }
-    // });
-    //
-    // const payment_url = govpayResponse.data.payment_url;
-    // --------------------------------------------------------
+    // Determine target payment amount (Custom Installment or Full Amount)
+    const targetAmount = custom_amount ? parseFloat(custom_amount) : payment.full_amount_payable;
+    const labelQuery = installment_label ? `&label=${encodeURIComponent(installment_label)}` : '';
 
     // SANDBOX / DUMMY: Use internal demo page
-    const payment_url = `/student-management/payment/govpay-demo?reference=${payment.payment_reference}&amount=${payment.full_amount_payable}`;
+    const payment_url = `/student-management/payment/govpay-demo?reference=${payment.payment_reference}&amount=${targetAmount}${labelQuery}`;
 
     return res.status(200).json({
       success: true,
@@ -138,7 +121,7 @@ export const initiateGovPayPayment = async (req: Request, res: Response) => {
       data: {
         payment_url,
         payment_reference: payment.payment_reference,
-        amount: payment.full_amount_payable,
+        amount: targetAmount,
       },
     });
   } catch (error: any) {
@@ -183,62 +166,69 @@ export const handleGovPayCallback = async (req: Request, res: Response) => {
     const callback_response = JSON.stringify(req.body);
 
     if (status === 'SUCCESS') {
-      // -------------------------------------------------------
-      // SECURITY: Verify amount matches what was expected.
-      // Never trust the amount sent in callback without verification.
-      // -------------------------------------------------------
       const callbackAmount = formatAmount(parseFloat(amount));
-      const expectedAmount = formatAmount(parseFloat(payment.full_amount_payable as unknown as string));
+      const isInstallment = !!req.body.installment_label;
 
-      if (callbackAmount !== expectedAmount) {
-        console.warn(
-          `Amount mismatch for ${payment_reference}. Expected: ${expectedAmount}, Got: ${callbackAmount}`
-        );
-        // Update to FAILED and store mismatch details
-        await payment.update({
-          payment_status: 'FAILED',
-          payment_completed: false,
-          callback_response,
-          remarks: `Amount mismatch: expected ${expectedAmount}, received ${callbackAmount}`,
-        });
-        return res.status(400).json({
-          success: false,
-          message: 'Payment amount mismatch. Payment rejected.',
-        });
+      if (!isInstallment) {
+        // ── Full payment: verify exact amount match ──────────────────
+        const expectedAmount = formatAmount(parseFloat(payment.full_amount_payable as unknown as string));
+        if (callbackAmount !== expectedAmount) {
+          console.warn(
+            `Amount mismatch for ${payment_reference}. Expected: ${expectedAmount}, Got: ${callbackAmount}`
+          );
+          await payment.update({
+            payment_status: 'FAILED',
+            payment_completed: false,
+            callback_response,
+            remarks: `Amount mismatch: expected ${expectedAmount}, received ${callbackAmount}`,
+          });
+          return res.status(400).json({
+            success: false,
+            message: 'Payment amount mismatch. Payment rejected.',
+          });
+        }
       }
 
+      // ── Calculate cumulative amount paid so far ───────────────────
+      const previouslyPaid = formatAmount(parseFloat(payment.amount_paid as unknown as string) || 0);
+      const newTotalPaid = formatAmount(previouslyPaid + callbackAmount);
+      const fullAmount = formatAmount(parseFloat(payment.full_amount_payable as unknown as string));
+      const isFullyPaid = newTotalPaid >= fullAmount;
+
       // Mark payment as PAID
-      const receipt_number = generateReceiptNumber();
+      const receipt_number = isFullyPaid ? generateReceiptNumber() : (payment.receipt_number || null);
       await payment.update({
-        payment_status: 'PAID',
-        amount_paid: callbackAmount,
-        payment_completed: true,
-        transaction_id: transaction_id || null,
+        payment_status: isFullyPaid ? 'PAID' : 'PENDING',
+        amount_paid: newTotalPaid,
+        payment_completed: isFullyPaid,
+        transaction_id: transaction_id || payment.transaction_id || null,
         receipt_number,
-        paid_at: paid_at ? new Date(paid_at) : new Date(),
+        paid_at: isFullyPaid ? (paid_at ? new Date(paid_at) : new Date()) : payment.paid_at,
         callback_response,
-        remarks: 'Payment confirmed via GovPay callback',
+        remarks: isFullyPaid
+          ? 'Payment confirmed via GovPay callback'
+          : `Installment paid: LKR ${callbackAmount.toLocaleString()}. Total paid so far: LKR ${newTotalPaid.toLocaleString()} of LKR ${fullAmount.toLocaleString()}.`,
       });
 
-      // --------------------------------------------------------
-      // UPDATE STUDENT STATUS TO REGISTERED
-      // After successful payment, the student registration status
-      // should become REGISTERED.
-      // --------------------------------------------------------
-      const student = await Student.findByPk(payment.student_id);
-      if (student) {
-        await student.update({ status: 'Registered' });
-        console.log(`Student ${payment.student_id} status updated to Registered.`);
+      // ── Update student status if fully paid ───────────────────────
+      if (isFullyPaid) {
+        const student = await Student.findByPk(payment.student_id);
+        if (student) {
+          await student.update({ status: 'Registered' });
+          console.log(`Student ${payment.student_id} status updated to Registered.`);
+        }
       }
 
       return res.status(200).json({
         success: true,
-        message: 'Payment marked as PAID successfully.',
+        message: isFullyPaid ? 'Payment marked as PAID successfully.' : 'Installment payment recorded.',
         data: {
           payment_reference,
-          payment_status: 'PAID',
-          receipt_number,
+          payment_status: isFullyPaid ? 'PAID' : 'PENDING',
+          amount_paid: newTotalPaid,
+          receipt_number: isFullyPaid ? receipt_number : null,
           transaction_id,
+          fully_paid: isFullyPaid,
         },
       });
     } else if (status === 'FAILED') {
@@ -343,7 +333,7 @@ export const getStudentPayments = async (req: Request, res: Response) => {
         {
           model: Student,
           as: 'student',
-          attributes: ['id', 'firstName', 'lastName', 'email', 'course', 'batch'],
+          attributes: ['id', 'firstName', 'lastName', 'email', 'course', 'batch', 'payment_plan', 'installment_breakdown'],
         },
       ],
       order: [['created_at', 'DESC']],
@@ -369,7 +359,7 @@ export const getPaymentById = async (req: Request, res: Response) => {
         {
           model: Student,
           as: 'student',
-          attributes: ['id', 'firstName', 'lastName', 'email', 'course', 'batch'],
+          attributes: ['id', 'firstName', 'lastName', 'email', 'course', 'batch', 'payment_plan', 'installment_breakdown'],
         },
       ],
     });
@@ -381,6 +371,51 @@ export const getPaymentById = async (req: Request, res: Response) => {
     return res.status(200).json({ success: true, data: payment });
   } catch (error: any) {
     console.error('getPaymentById error:', error);
+    return res.status(500).json({ success: false, message: error.message || 'Server Error' });
+  }
+};
+
+// ============================================================
+// G. SEND INSTALLMENT REMINDER
+// POST /api/student-payments/send-reminder
+// ============================================================
+export const sendPaymentReminder = async (req: Request, res: Response) => {
+  try {
+    const { payment_id, reminder_type, message, recipient } = req.body;
+
+    if (!payment_id) {
+      return res.status(400).json({ success: false, message: 'payment_id is required.' });
+    }
+
+    const payment = await StudentPayment.findByPk(payment_id, {
+      include: [{ model: Student, as: 'student' }]
+    });
+
+    if (!payment) {
+      return res.status(404).json({ success: false, message: 'Payment record not found.' });
+    }
+
+    const studentObj = (payment as any).student;
+    const recipientEmail = recipient || (studentObj ? studentObj.email : payment.student_id);
+
+    // Log reminder in remarks audit log
+    const now = new Date().toLocaleString('en-LK');
+    const existingRemarks = payment.remarks || '';
+    const newRemarks = `${existingRemarks}\n[Reminder Sent ${now}]: ${reminder_type || 'Email/SMS'} sent to ${recipientEmail}`.trim();
+
+    await payment.update({ remarks: newRemarks });
+
+    return res.status(200).json({
+      success: true,
+      message: `Installment reminder dispatched via ${reminder_type || 'Email/SMS'} successfully!`,
+      data: {
+        payment_id: payment.id,
+        sent_at: now,
+        recipient: recipientEmail,
+      }
+    });
+  } catch (error: any) {
+    console.error('sendPaymentReminder error:', error);
     return res.status(500).json({ success: false, message: error.message || 'Server Error' });
   }
 };

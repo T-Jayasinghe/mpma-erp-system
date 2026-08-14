@@ -12,7 +12,10 @@ export const register = async (req: Request, res: Response): Promise<void> => {
     const { 
       name, email, password, role, employeeId, phoneNumber, isActive,
       canBookAuditorium, canBookClassroom, canBookTransport,
-      canManageVehicles, canManageClassrooms, canManageMaintenance 
+      canManageVehicles, canManageClassrooms, canManageMaintenance,
+      canManageCourses, canManageBatches, canManageLecturers,
+      canManageEnrollment, canManagePayments, canManageCertificates,
+      canManageStudents, canManageUsers
     } = req.body;
 
     const existingUser = await User.findOne({ where: { email } });
@@ -37,7 +40,15 @@ export const register = async (req: Request, res: Response): Promise<void> => {
       canBookTransport: !!canBookTransport,
       canManageVehicles: !!canManageVehicles,
       canManageClassrooms: !!canManageClassrooms,
-      canManageMaintenance: !!canManageMaintenance
+      canManageMaintenance: !!canManageMaintenance,
+      canManageCourses: !!canManageCourses,
+      canManageBatches: !!canManageBatches,
+      canManageLecturers: !!canManageLecturers,
+      canManageEnrollment: !!canManageEnrollment,
+      canManagePayments: !!canManagePayments,
+      canManageCertificates: !!canManageCertificates,
+      canManageStudents: !!canManageStudents,
+      canManageUsers: !!canManageUsers
     });
 
     // Send welcome email with login credentials
@@ -98,7 +109,15 @@ export const login = async (req: Request, res: Response): Promise<void> => {
         canBookTransport: user.canBookTransport,
         canManageVehicles: user.canManageVehicles,
         canManageClassrooms: user.canManageClassrooms,
-        canManageMaintenance: user.canManageMaintenance
+        canManageMaintenance: user.canManageMaintenance,
+        canManageCourses: user.canManageCourses,
+        canManageBatches: user.canManageBatches,
+        canManageLecturers: user.canManageLecturers,
+        canManageEnrollment: user.canManageEnrollment,
+        canManagePayments: user.canManagePayments,
+        canManageCertificates: user.canManageCertificates,
+        canManageStudents: user.canManageStudents,
+        canManageUsers: user.canManageUsers
       }
     });
   } catch (error: any) {
@@ -186,7 +205,10 @@ export const updateUser = async (req: Request, res: Response): Promise<void> => 
     const { 
       name, email, employeeId, role, phoneNumber, isActive,
       canBookAuditorium, canBookClassroom, canBookTransport,
-      canManageVehicles, canManageClassrooms, canManageMaintenance
+      canManageVehicles, canManageClassrooms, canManageMaintenance,
+      canManageCourses, canManageBatches, canManageLecturers,
+      canManageEnrollment, canManagePayments, canManageCertificates,
+      canManageStudents, canManageUsers
     } = req.body;
 
     const user = await User.findByPk(id as string);
@@ -207,6 +229,16 @@ export const updateUser = async (req: Request, res: Response): Promise<void> => 
     if (canManageVehicles !== undefined) user.canManageVehicles = canManageVehicles;
     if (canManageClassrooms !== undefined) user.canManageClassrooms = canManageClassrooms;
     if (canManageMaintenance !== undefined) user.canManageMaintenance = canManageMaintenance;
+    if (canManageCourses !== undefined) user.canManageCourses = canManageCourses;
+    if (canManageBatches !== undefined) user.canManageBatches = canManageBatches;
+    if (canManageLecturers !== undefined) user.canManageLecturers = canManageLecturers;
+    if (canManageEnrollment !== undefined) user.canManageEnrollment = canManageEnrollment;
+    if (canManagePayments !== undefined) user.canManagePayments = canManagePayments;
+    if (canManageCertificates !== undefined) user.canManageCertificates = canManageCertificates;
+    if (canManageStudents !== undefined) user.canManageStudents = canManageStudents;
+    if (canManageUsers !== undefined) user.canManageUsers = canManageUsers;
+
+    await user.save();
 
     await user.save();
 

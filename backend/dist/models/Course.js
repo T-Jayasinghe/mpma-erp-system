@@ -71,6 +71,15 @@ Course.init({
         allowNull: true,
         defaultValue: 'Physical',
     },
+    maxInstallments: {
+        type: db_1.DataTypes.INTEGER,
+        allowNull: false,
+        defaultValue: 1,
+    },
+    installmentAmounts: {
+        type: db_1.DataTypes.JSON,
+        allowNull: true,
+    },
 }, {
     sequelize: db_1.sequelize,
     tableName: 'courses',

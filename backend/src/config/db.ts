@@ -162,6 +162,28 @@ const connectDB = async () => {
       console.warn('Notice: Lecturer table column checks skipped or table does not exist yet:', migrationError.message);
     }
 
+    // Programmatically ensure new User permission columns exist
+    try {
+      const queryInterface = sequelize.getQueryInterface();
+      const userTableDefinition = await queryInterface.describeTable('users');
+      const permCols = [
+        'canManageCourses', 'canManageBatches', 'canManageLecturers',
+        'canManageEnrollment', 'canManagePayments', 'canManageCertificates',
+        'canManageStudents', 'canManageUsers'
+      ];
+      for (const col of permCols) {
+        if (!userTableDefinition[col]) {
+          await queryInterface.addColumn('users', col, {
+            type: DataTypes.BOOLEAN,
+            defaultValue: false,
+          });
+          console.log(`Successfully added missing column "${col}" to users table.`);
+        }
+      }
+    } catch (userMigrationError: any) {
+      console.warn('Notice: Users table permission column checks skipped:', userMigrationError.message);
+    }
+
     // Auto-populate BankBranch table in database if empty
     try {
       const { BankBranch } = await import('../models/BankBranch');

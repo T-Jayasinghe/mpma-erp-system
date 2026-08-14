@@ -19,6 +19,7 @@ export default function GovPayDemo() {
 
   const reference = searchParams.get("reference");
   const amount = searchParams.get("amount");
+  const label = searchParams.get("label");
 
   useEffect(() => {
     if (!reference || !amount) {
@@ -35,6 +36,7 @@ export default function GovPayDemo() {
         transaction_id: status === "SUCCESS" ? `GP-TXN-${Math.random().toString(36).substr(2, 9).toUpperCase()}` : null,
         status: status,
         amount: amount,
+        installment_label: label,
         paid_at: status === "SUCCESS" ? new Date().toISOString() : null,
       };
 
@@ -89,6 +91,11 @@ export default function GovPayDemo() {
           </div>
 
           <div className="text-center space-y-2">
+            {label && (
+              <span className="inline-block px-3 py-1 bg-indigo-50 text-indigo-700 text-xs font-bold rounded-full border border-indigo-200 mb-1">
+                ⚡ Paying {label}
+              </span>
+            )}
             <p className="text-slate-400 text-sm font-medium">Payment Amount</p>
             <h2 className="text-4xl font-black text-slate-900">
               Rs. {Number(amount).toLocaleString()}

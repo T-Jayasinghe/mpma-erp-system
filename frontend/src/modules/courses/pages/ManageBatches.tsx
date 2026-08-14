@@ -12,7 +12,8 @@ import {
   UserPlus, 
   Layers, 
   CalendarDays,
-  Download
+  Download,
+  X
 } from "lucide-react";
 import "react-toastify/dist/ReactToastify.css";
 import { fetchApi } from "../../../utils/api";
@@ -24,12 +25,12 @@ export default function ManageBatches() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCourseFilter, setSelectedCourseFilter] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [showEditModal, setShowEditModal] = useState(false);
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
   const userRole = localStorage.getItem("userRole") || "user";
 
   const [selectedScheduleFilter, setSelectedScheduleFilter] = useState("");
   const [selectedModeFilter, setSelectedModeFilter] = useState("");
-  const [selectedTypeFilter, setSelectedTypeFilter] = useState("");
 
   const [form, setForm] = useState({
     batchCode: "",
@@ -105,7 +106,7 @@ export default function ManageBatches() {
       mode: b.mode || "Physical",
       type: b.type || "Full Time"
     });
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    setShowEditModal(true);
   };
 
   const handleSaveBatch = async (e: any) => {
@@ -175,6 +176,7 @@ export default function ManageBatches() {
 
   const handleReset = () => {
     setEditingId(null);
+    setShowEditModal(false);
     setForm({
       batchCode: "",
       courseId: "",
@@ -642,6 +644,153 @@ export default function ManageBatches() {
         </div>
 
       </div>
+
+      {/* ═══════════════════════════════════════════
+           EDIT BATCH MODAL
+      ═══════════════════════════════════════════ */}
+      {showEditModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-xl max-h-[90vh] flex flex-col overflow-hidden border border-slate-200">
+
+            {/* Modal Header */}
+            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-gradient-to-r from-emerald-50 to-white shrink-0">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-emerald-100 text-emerald-700 rounded-xl">
+                  <Edit3 className="w-4 h-4" />
+                </div>
+                <div>
+                  <h2 className="text-base font-bold text-slate-800">Edit Batch</h2>
+                  <p className="text-xs text-slate-500 font-medium">Update configuration for batch <span className="font-bold text-emerald-700">{form.batchCode}</span></p>
+                </div>
+              </div>
+              <button onClick={handleReset}
+                className="p-2 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <form onSubmit={handleSaveBatch} className="flex flex-col min-h-0 flex-1 overflow-hidden">
+              <div className="flex-1 overflow-y-auto px-6 py-5 space-y-4">
+
+                {/* Batch Code */}
+                <div>
+                  <label className="block text-sm font-semibold text-slate-700 mb-1.5">Batch Identifier / Code</label>
+                  <input name="batchCode" value={form.batchCode} onChange={handleChange}
+                    placeholder="e.g. B-DSE-30-01"
+                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 focus:bg-white transition-all outline-none"
+                    required />
+                </div>
+
+                {/* Course */}
+                <div>
+                  <label className="block text-sm font-semibold text-slate-700 mb-1.5">Parent Course Offering</label>
+                  <select name="courseId" value={form.courseId} onChange={handleCourseChange}
+                    className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 focus:bg-white transition-all outline-none"
+                    required>
+                    <option value="">-- Associate Course --</option>
+                    {courses.map(c => (
+                      <option key={c.id} value={c.id}>{c.courseCode} - {c.courseName}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Schedule / Mode / Type */}
+                <div className="grid grid-cols-3 gap-3 p-3.5 bg-emerald-50/40 rounded-xl border border-emerald-100/80">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">Schedule</label>
+                    <select name="schedule" value={form.schedule} onChange={handleChange}
+                      className="w-full px-2.5 py-2 bg-white border border-slate-200 rounded-lg text-xs font-semibold text-slate-700 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none"
+                      required>
+                      <option value="Weekday">Weekday</option>
+                      <option value="Weekend">Weekend</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">Delivery Mode</label>
+                    <select name="mode" value={form.mode} onChange={handleChange}
+                      className="w-full px-2.5 py-2 bg-white border border-slate-200 rounded-lg text-xs font-semibold text-slate-700 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none"
+                      required>
+                      <option value="Physical">Physical</option>
+                      <option value="Online">Online</option>
+                      <option value="Hybrid">Hybrid</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">Study Type</label>
+                    <select name="type" value={form.type} onChange={handleChange}
+                      className="w-full px-2.5 py-2 bg-white border border-slate-200 rounded-lg text-xs font-semibold text-slate-700 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none"
+                      required>
+                      <option value="Full Time">Full Time</option>
+                      <option value="Part Time">Part Time</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* Dates */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-semibold text-slate-700 mb-1.5">Commencement</label>
+                    <input type="date" name="startDate" value={form.startDate} onChange={handleChange}
+                      className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 focus:bg-white transition-all outline-none"
+                      required />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold text-slate-700 mb-1.5">Conclusion</label>
+                    <input type="date" name="endDate" value={form.endDate} onChange={handleChange}
+                      className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 focus:bg-white transition-all outline-none"
+                      required />
+                  </div>
+                </div>
+
+                {/* Location & Capacity */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-semibold text-slate-700 mb-1.5">Lecture Room / Venue</label>
+                    <input name="location" value={form.location} onChange={handleChange}
+                      placeholder="e.g. Hall A"
+                      className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 focus:bg-white transition-all outline-none"
+                      required />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold text-slate-700 mb-1.5">Max Students</label>
+                    <input type="number" name="maxStudents" value={form.maxStudents} onChange={handleChange}
+                      placeholder="40" min="1"
+                      className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 focus:bg-white transition-all outline-none"
+                      required />
+                  </div>
+                </div>
+
+                {/* Status */}
+                <div>
+                  <label className="block text-sm font-semibold text-slate-700 mb-1.5">Batch Status</label>
+                  <select name="status" value={form.status} onChange={handleChange}
+                    className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 focus:bg-white transition-all outline-none">
+                    <option value="Available">Available</option>
+                    <option value="Full">Full</option>
+                    <option value="Completed">Completed</option>
+                    <option value="Cancelled">Cancelled</option>
+                  </select>
+                </div>
+
+              </div>
+
+              {/* Modal Footer */}
+              <div className="px-6 py-4 border-t border-slate-100 bg-slate-50/50 flex items-center justify-end gap-3 shrink-0">
+                <button type="button" onClick={handleReset}
+                  className="px-5 py-2.5 rounded-xl text-sm font-semibold text-slate-600 bg-white border border-slate-200 hover:bg-slate-100 transition-colors">
+                  Cancel
+                </button>
+                <button type="submit"
+                  className="px-5 py-2.5 rounded-xl text-sm font-semibold text-white bg-emerald-600 hover:bg-emerald-700 shadow-md shadow-emerald-500/20 transition-all hover:-translate-y-0.5 flex items-center gap-2">
+                  <Edit3 className="w-4 h-4" />
+                  Update Batch
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       <CourseReportModal 
         isOpen={isReportModalOpen}

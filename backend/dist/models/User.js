@@ -56,6 +56,38 @@ User.init({
         type: db_1.DataTypes.BOOLEAN,
         defaultValue: false,
     },
+    canManageCourses: {
+        type: db_1.DataTypes.BOOLEAN,
+        defaultValue: false,
+    },
+    canManageBatches: {
+        type: db_1.DataTypes.BOOLEAN,
+        defaultValue: false,
+    },
+    canManageLecturers: {
+        type: db_1.DataTypes.BOOLEAN,
+        defaultValue: false,
+    },
+    canManageEnrollment: {
+        type: db_1.DataTypes.BOOLEAN,
+        defaultValue: false,
+    },
+    canManagePayments: {
+        type: db_1.DataTypes.BOOLEAN,
+        defaultValue: false,
+    },
+    canManageCertificates: {
+        type: db_1.DataTypes.BOOLEAN,
+        defaultValue: false,
+    },
+    canManageStudents: {
+        type: db_1.DataTypes.BOOLEAN,
+        defaultValue: false,
+    },
+    canManageUsers: {
+        type: db_1.DataTypes.BOOLEAN,
+        defaultValue: false,
+    },
     phoneNumber: {
         type: db_1.DataTypes.STRING,
         allowNull: true,

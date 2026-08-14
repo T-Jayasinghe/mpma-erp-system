@@ -20,7 +20,7 @@ const email_1 = require("../utils/email");
 const JWT_SECRET = process.env.JWT_SECRET || 'fallback_secret_for_development';
 const register = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        const { name, email, password, role, employeeId, phoneNumber, isActive, canBookAuditorium, canBookClassroom, canBookTransport, canManageVehicles, canManageClassrooms, canManageMaintenance } = req.body;
+        const { name, email, password, role, employeeId, phoneNumber, isActive, canBookAuditorium, canBookClassroom, canBookTransport, canManageVehicles, canManageClassrooms, canManageMaintenance, canManageCourses, canManageBatches, canManageLecturers, canManageEnrollment, canManagePayments, canManageCertificates, canManageStudents, canManageUsers } = req.body;
         const existingUser = yield User_1.User.findOne({ where: { email } });
         if (existingUser) {
             res.status(400).json({ message: 'User already exists' });
@@ -41,7 +41,15 @@ const register = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
             canBookTransport: !!canBookTransport,
             canManageVehicles: !!canManageVehicles,
             canManageClassrooms: !!canManageClassrooms,
-            canManageMaintenance: !!canManageMaintenance
+            canManageMaintenance: !!canManageMaintenance,
+            canManageCourses: !!canManageCourses,
+            canManageBatches: !!canManageBatches,
+            canManageLecturers: !!canManageLecturers,
+            canManageEnrollment: !!canManageEnrollment,
+            canManagePayments: !!canManagePayments,
+            canManageCertificates: !!canManageCertificates,
+            canManageStudents: !!canManageStudents,
+            canManageUsers: !!canManageUsers
         });
         // Send welcome email with login credentials
         yield (0, email_1.sendWelcomeEmail)(email, password, name);
@@ -92,7 +100,15 @@ const login = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
                 canBookTransport: user.canBookTransport,
                 canManageVehicles: user.canManageVehicles,
                 canManageClassrooms: user.canManageClassrooms,
-                canManageMaintenance: user.canManageMaintenance
+                canManageMaintenance: user.canManageMaintenance,
+                canManageCourses: user.canManageCourses,
+                canManageBatches: user.canManageBatches,
+                canManageLecturers: user.canManageLecturers,
+                canManageEnrollment: user.canManageEnrollment,
+                canManagePayments: user.canManagePayments,
+                canManageCertificates: user.canManageCertificates,
+                canManageStudents: user.canManageStudents,
+                canManageUsers: user.canManageUsers
             }
         });
     }
@@ -174,7 +190,7 @@ exports.deleteUser = deleteUser;
 const updateUser = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const { id } = req.params;
-        const { name, email, employeeId, role, phoneNumber, isActive, canBookAuditorium, canBookClassroom, canBookTransport, canManageVehicles, canManageClassrooms, canManageMaintenance } = req.body;
+        const { name, email, employeeId, role, phoneNumber, isActive, canBookAuditorium, canBookClassroom, canBookTransport, canManageVehicles, canManageClassrooms, canManageMaintenance, canManageCourses, canManageBatches, canManageLecturers, canManageEnrollment, canManagePayments, canManageCertificates, canManageStudents, canManageUsers } = req.body;
         const user = yield User_1.User.findByPk(id);
         if (!user) {
             res.status(404).json({ message: 'User not found' });
@@ -204,6 +220,23 @@ const updateUser = (req, res) => __awaiter(void 0, void 0, void 0, function* () 
             user.canManageClassrooms = canManageClassrooms;
         if (canManageMaintenance !== undefined)
             user.canManageMaintenance = canManageMaintenance;
+        if (canManageCourses !== undefined)
+            user.canManageCourses = canManageCourses;
+        if (canManageBatches !== undefined)
+            user.canManageBatches = canManageBatches;
+        if (canManageLecturers !== undefined)
+            user.canManageLecturers = canManageLecturers;
+        if (canManageEnrollment !== undefined)
+            user.canManageEnrollment = canManageEnrollment;
+        if (canManagePayments !== undefined)
+            user.canManagePayments = canManagePayments;
+        if (canManageCertificates !== undefined)
+            user.canManageCertificates = canManageCertificates;
+        if (canManageStudents !== undefined)
+            user.canManageStudents = canManageStudents;
+        if (canManageUsers !== undefined)
+            user.canManageUsers = canManageUsers;
+        yield user.save();
         yield user.save();
         res.status(200).json({ message: 'User updated successfully' });
     }

@@ -485,6 +485,8 @@ export default function StudentProfile() {
               zScore?: string;
               subjects?: QualificationItem[];
             };
+            olAttempts?: any[];
+            alAttempts?: any[];
             otherQualifications?: OtherItem[];
           }
 
@@ -506,30 +508,38 @@ export default function StudentProfile() {
           const hasOL = ol && (ol.year || ol.indexNumber || (ol.subjects && ol.subjects.length > 0));
           const hasAL = al && (al.year || al.indexNumber || al.zScore || (al.subjects && al.subjects.length > 0));
           const hasOther = Array.isArray(other) && other.length > 0;
-          if (!hasOL && !hasAL && !hasOther) return null;
+          const olAttemptsList: any[] = Array.isArray(qualData?.olAttempts) && qualData.olAttempts.length > 0
+            ? qualData.olAttempts
+            : (hasOL ? [{ attemptName: '1st Attempt', ...ol }] : []);
+
+          const alAttemptsList: any[] = Array.isArray(qualData?.alAttempts) && qualData.alAttempts.length > 0
+            ? qualData.alAttempts
+            : (hasAL ? [{ attemptName: '1st Attempt', ...al }] : []);
+
+          if (olAttemptsList.length === 0 && alAttemptsList.length === 0 && !hasOther) return null;
 
           return (
             <SectionCard title="Educational Qualifications & Exam Results" icon={Award}>
               <div className="py-4 space-y-5">
                 {/* O/L Section */}
-                {hasOL && (
-                  <div className="bg-slate-50/80 rounded-2xl p-5 border border-slate-200/70 space-y-3">
+                {olAttemptsList.length > 0 && olAttemptsList.map((olAtt: any, idx: number) => (
+                  <div key={idx} className="bg-slate-50/80 rounded-2xl p-5 border border-slate-200/70 space-y-3">
                     <div className="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-slate-200/70">
                       <span className="font-bold text-slate-800 text-xs flex items-center gap-2">
                         <span className="w-2 h-2 rounded-full bg-blue-600"></span>
-                        G.C.E. Ordinary Level (O/L)
+                        G.C.E. Ordinary Level (O/L) {olAtt.attemptName ? `— ${olAtt.attemptName}` : ''}
                       </span>
                       <div className="flex items-center gap-3 text-xs text-slate-500 font-semibold">
-                        {ol.year && <span>Year: <strong className="text-slate-800">{ol.year}</strong></span>}
-                        {ol.indexNumber && <span>Index: <strong className="text-slate-800">{ol.indexNumber}</strong></span>}
-                        {ol.medium && <span>Medium: <strong className="text-slate-800">{ol.medium}</strong></span>}
+                        {olAtt.year && <span>Year: <strong className="text-slate-800">{olAtt.year}</strong></span>}
+                        {olAtt.indexNumber && <span>Index: <strong className="text-slate-800">{olAtt.indexNumber}</strong></span>}
+                        {olAtt.medium && <span>Medium: <strong className="text-slate-800">{olAtt.medium}</strong></span>}
                       </div>
                     </div>
 
-                    {ol.subjects && ol.subjects.length > 0 ? (
+                    {olAtt.subjects && olAtt.subjects.length > 0 ? (
                       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
-                        {ol.subjects.map((sub: QualificationItem, idx: number) => (
-                          <div key={idx} className="bg-white px-3 py-2 rounded-xl border border-slate-200 flex items-center justify-between text-xs shadow-2xs">
+                        {olAtt.subjects.map((sub: QualificationItem, subIdx: number) => (
+                          <div key={subIdx} className="bg-white px-3 py-2 rounded-xl border border-slate-200 flex items-center justify-between text-xs shadow-2xs">
                             <span className="font-semibold text-slate-700 truncate pr-2">{sub.subject}</span>
                             <span className={`px-2 py-0.5 rounded font-black text-xs shrink-0 ${
                               sub.grade === 'A' ? 'bg-emerald-100 text-emerald-800' :
@@ -544,30 +554,30 @@ export default function StudentProfile() {
                         ))}
                       </div>
                     ) : (
-                      <p className="text-xs text-slate-400 italic">No O/L subject grades listed.</p>
+                      <p className="text-xs text-slate-400 italic">No O/L subject grades listed for this attempt.</p>
                     )}
                   </div>
-                )}
+                ))}
 
                 {/* A/L Section */}
-                {hasAL && (
-                  <div className="bg-slate-50/80 rounded-2xl p-5 border border-slate-200/70 space-y-3">
+                {alAttemptsList.length > 0 && alAttemptsList.map((alAtt: any, idx: number) => (
+                  <div key={idx} className="bg-slate-50/80 rounded-2xl p-5 border border-slate-200/70 space-y-3">
                     <div className="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-slate-200/70">
                       <span className="font-bold text-slate-800 text-xs flex items-center gap-2">
                         <span className="w-2 h-2 rounded-full bg-indigo-600"></span>
-                        G.C.E. Advanced Level (A/L) — {al.stream || 'Stream'}
+                        G.C.E. Advanced Level (A/L) {alAtt.attemptName ? `— ${alAtt.attemptName}` : ''} {alAtt.stream ? `(${alAtt.stream})` : ''}
                       </span>
                       <div className="flex items-center gap-3 text-xs text-slate-500 font-semibold">
-                        {al.year && <span>Year: <strong className="text-slate-800">{al.year}</strong></span>}
-                        {al.indexNumber && <span>Index: <strong className="text-slate-800">{al.indexNumber}</strong></span>}
-                        {al.zScore && <span>Z-Score: <strong className="text-slate-800">{al.zScore}</strong></span>}
+                        {alAtt.year && <span>Year: <strong className="text-slate-800">{alAtt.year}</strong></span>}
+                        {alAtt.indexNumber && <span>Index: <strong className="text-slate-800">{alAtt.indexNumber}</strong></span>}
+                        {alAtt.zScore && <span>Z-Score: <strong className="text-slate-800">{alAtt.zScore}</strong></span>}
                       </div>
                     </div>
 
-                    {al.subjects && al.subjects.length > 0 ? (
+                    {alAtt.subjects && alAtt.subjects.length > 0 ? (
                       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
-                        {al.subjects.map((sub: QualificationItem, idx: number) => (
-                          <div key={idx} className="bg-white px-3 py-2 rounded-xl border border-slate-200 flex items-center justify-between text-xs shadow-2xs">
+                        {alAtt.subjects.map((sub: QualificationItem, subIdx: number) => (
+                          <div key={subIdx} className="bg-white px-3 py-2 rounded-xl border border-slate-200 flex items-center justify-between text-xs shadow-2xs">
                             <span className="font-semibold text-slate-700 truncate pr-2">{sub.subject}</span>
                             <span className={`px-2 py-0.5 rounded font-black text-xs shrink-0 ${
                               sub.grade === 'A' ? 'bg-emerald-100 text-emerald-800' :
@@ -582,10 +592,10 @@ export default function StudentProfile() {
                         ))}
                       </div>
                     ) : (
-                      <p className="text-xs text-slate-400 italic">No A/L subject grades listed.</p>
+                      <p className="text-xs text-slate-400 italic">No A/L subject grades listed for this attempt.</p>
                     )}
                   </div>
-                )}
+                ))}
 
                 {/* Other Qualifications Section */}
                 {hasOther && (

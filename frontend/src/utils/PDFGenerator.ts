@@ -1,10 +1,56 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { formatDate } from './api';
+import logoImg from '../assets/logo.png';
 
 const PRIMARY_COLOR: [number, number, number] = [15, 23, 42]; // Slate-900
 const SECONDARY_COLOR: [number, number, number] = [2, 132, 199]; // Blue-600
 const SUCCESS_COLOR: [number, number, number] = [5, 150, 105]; // Emerald-600
+
+// Logo caching for fast synchronous rendering in jsPDF
+let cachedLogoDataUrl: string | null = null;
+const logoImage = new Image();
+logoImage.crossOrigin = 'Anonymous';
+logoImage.onload = () => {
+  try {
+    const canvas = document.createElement('canvas');
+    canvas.width = logoImage.naturalWidth;
+    canvas.height = logoImage.naturalHeight;
+    const ctx = canvas.getContext('2d');
+    if (ctx) {
+      ctx.drawImage(logoImage, 0, 0);
+      cachedLogoDataUrl = canvas.toDataURL('image/png');
+    }
+  } catch (e) {
+    console.warn('Logo pre-cache notice:', e);
+  }
+};
+logoImage.src = logoImg;
+
+const drawHeaderLogo = (doc: jsPDF, x: number, y: number, w: number, h: number) => {
+  try {
+    if (cachedLogoDataUrl) {
+      doc.addImage(cachedLogoDataUrl, 'PNG', x, y, w, h);
+    } else if (logoImage.complete && logoImage.naturalWidth > 0) {
+      const canvas = document.createElement('canvas');
+      canvas.width = logoImage.naturalWidth;
+      canvas.height = logoImage.naturalHeight;
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        ctx.drawImage(logoImage, 0, 0);
+        const data = canvas.toDataURL('image/png');
+        cachedLogoDataUrl = data;
+        doc.addImage(data, 'PNG', x, y, w, h);
+      } else {
+        doc.addImage(logoImg, 'PNG', x, y, w, h);
+      }
+    } else {
+      doc.addImage(logoImg, 'PNG', x, y, w, h);
+    }
+  } catch (err) {
+    console.warn('PDF Header Logo rendering warning:', err);
+  }
+};
 
 interface StudentReceiptPayment {
   id: number;
@@ -54,16 +100,19 @@ export const generateBookingSlip = (type: 'Transport' | 'Classroom' | 'Auditoriu
 
   // Branding Header
   doc.setFillColor(PRIMARY_COLOR[0], PRIMARY_COLOR[1], PRIMARY_COLOR[2]);
-  doc.rect(0, 0, pageWidth, 40, 'F');
+  doc.rect(0, 0, pageWidth, 42, 'F');
+
+  // Draw Logo
+  drawHeaderLogo(doc, 15, 6, 30, 30);
   
   doc.setTextColor(255, 255, 255);
-  doc.setFontSize(24);
+  doc.setFontSize(22);
   doc.setFont('helvetica', 'bold');
-  doc.text('MPMA ERP SYSTEM', 20, 25);
+  doc.text('MPMA ERP SYSTEM', 50, 24);
   
   doc.setFontSize(10);
   doc.setFont('helvetica', 'normal');
-  doc.text('Advanced Resource Management Platform', 20, 32);
+  doc.text('Advanced Resource Management Platform', 50, 32);
 
   // Slip Title
   doc.setTextColor(PRIMARY_COLOR[0], PRIMARY_COLOR[1], PRIMARY_COLOR[2]);
@@ -161,14 +210,17 @@ export const generateStudentPaymentReceipt = ({
   doc.setFillColor(PRIMARY_COLOR[0], PRIMARY_COLOR[1], PRIMARY_COLOR[2]);
   doc.rect(0, 0, pageWidth, 42, 'F');
 
+  // Draw Logo
+  drawHeaderLogo(doc, 15, 6, 30, 30);
+
   doc.setTextColor(255, 255, 255);
   doc.setFontSize(22);
   doc.setFont('helvetica', 'bold');
-  doc.text('MPMA ERP SYSTEM', 20, 24);
+  doc.text('MPMA ERP SYSTEM', 50, 24);
 
   doc.setFontSize(10);
   doc.setFont('helvetica', 'normal');
-  doc.text('Official Student Payment Receipt', 20, 32);
+  doc.text('Official Student Payment Receipt', 50, 32);
 
   doc.setTextColor(PRIMARY_COLOR[0], PRIMARY_COLOR[1], PRIMARY_COLOR[2]);
   doc.setFontSize(18);
@@ -252,14 +304,17 @@ export const generateStudentProfilePdf = (student: StudentProfilePdfData) => {
   doc.setFillColor(PRIMARY_COLOR[0], PRIMARY_COLOR[1], PRIMARY_COLOR[2]);
   doc.rect(0, 0, pageWidth, 42, 'F');
 
+  // Draw Logo
+  drawHeaderLogo(doc, 15, 6, 30, 30);
+
   doc.setTextColor(255, 255, 255);
   doc.setFontSize(22);
   doc.setFont('helvetica', 'bold');
-  doc.text('MPMA ERP SYSTEM', 20, 24);
+  doc.text('MPMA ERP SYSTEM', 50, 24);
 
   doc.setFontSize(10);
   doc.setFont('helvetica', 'normal');
-  doc.text('Student Management Module', 20, 32);
+  doc.text('Student Management Module', 50, 32);
 
   doc.setTextColor(PRIMARY_COLOR[0], PRIMARY_COLOR[1], PRIMARY_COLOR[2]);
   doc.setFontSize(18);
@@ -333,27 +388,33 @@ export const generateListReport = (title: string, columns: string[], rows: any[]
 
   // Header
   doc.setFillColor(PRIMARY_COLOR[0], PRIMARY_COLOR[1], PRIMARY_COLOR[2]);
-  doc.rect(0, 0, pageWidth, 30, 'F');
+  doc.rect(0, 0, pageWidth, 32, 'F');
   
+  // Draw Logo
+  drawHeaderLogo(doc, 15, 4, 24, 24);
+
   doc.setTextColor(255, 255, 255);
   doc.setFontSize(20);
-  doc.text('MPMA ERP SYSTEM', 20, 20);
+  doc.setFont('helvetica', 'bold');
+  doc.text('MPMA ERP SYSTEM', 45, 20);
   
   doc.setFontSize(14);
+  doc.setFont('helvetica', 'normal');
   doc.text(title, pageWidth - 20, 20, { align: 'right' });
 
   doc.setTextColor(100, 116, 139);
   doc.setFontSize(10);
-  doc.text(`Generated on: ${new Date().toLocaleString()}`, 20, 40);
+  doc.text(`Generated on: ${new Date().toLocaleString()}`, 20, 42);
 
   autoTable(doc, {
-    startY: 45,
+    startY: 46,
+    margin: { left: 15, right: 15 },
     head: [columns],
     body: rows,
     theme: 'striped',
     headStyles: { fillColor: [15, 23, 42], textColor: [255, 255, 255], fontStyle: 'bold' },
     alternateRowStyles: { fillColor: [248, 250, 252] },
-    styles: { fontSize: 9, cellPadding: 3, font: 'helvetica' }
+    styles: { fontSize: 8.5, cellPadding: 3, font: 'helvetica' }
   });
 
   doc.save(`${title.toLowerCase().replace(/\s+/g, '_')}_${new Date().toLocaleDateString().replace(/\//g, '-')}.pdf`);
@@ -388,16 +449,19 @@ export const generateCoursesReport = (courses: any[], filters: { stream?: string
 
   // Branding Header
   doc.setFillColor(PRIMARY_COLOR[0], PRIMARY_COLOR[1], PRIMARY_COLOR[2]);
-  doc.rect(0, 0, pageWidth, 32, 'F');
+  doc.rect(0, 0, pageWidth, 34, 'F');
   
+  // Draw Logo
+  drawHeaderLogo(doc, 15, 4, 26, 26);
+
   doc.setTextColor(255, 255, 255);
   doc.setFontSize(20);
   doc.setFont('helvetica', 'bold');
-  doc.text('MPMA ERP SYSTEM', 15, 18);
+  doc.text('MPMA ERP SYSTEM', 46, 18);
 
   doc.setFontSize(11);
   doc.setFont('helvetica', 'normal');
-  doc.text('Course Management - Courses Master Report', 15, 26);
+  doc.text('Course Management - Courses Master Report', 46, 26);
 
   // Metadata
   doc.setFontSize(9);
@@ -407,9 +471,9 @@ export const generateCoursesReport = (courses: any[], filters: { stream?: string
 
   // Filter Summary Box
   doc.setFillColor(248, 250, 252);
-  doc.rect(15, 36, pageWidth - 30, 14, 'F');
+  doc.rect(15, 38, pageWidth - 30, 14, 'F');
   doc.setDrawColor(226, 232, 240);
-  doc.rect(15, 36, pageWidth - 30, 14, 'S');
+  doc.rect(15, 38, pageWidth - 30, 14, 'S');
 
   doc.setTextColor(71, 85, 105);
   doc.setFontSize(9);
@@ -422,7 +486,7 @@ export const generateCoursesReport = (courses: any[], filters: { stream?: string
     filters.search ? `Search: "${filters.search}"` : ''
   ].filter(Boolean).join('  |  ');
   
-  doc.text(`Applied Filters:  ${filterParts}`, 20, 45);
+  doc.text(`Applied Filters:  ${filterParts}`, 20, 47);
 
   const tableHead = [['#', 'Code', 'Course Title', 'Stream', 'Duration', 'Mode', 'Schedule', 'Max Pax', 'Reg Fee (LKR)', 'Course Fee (LKR)', 'Status']];
   const tableBody = courses.map((c, index) => [
@@ -440,25 +504,21 @@ export const generateCoursesReport = (courses: any[], filters: { stream?: string
   ]);
 
   autoTable(doc, {
-    startY: 54,
+    startY: 56,
+    margin: { left: 15, right: 15 },
     head: tableHead,
     body: tableBody,
     theme: 'striped',
-    headStyles: { fillColor: PRIMARY_COLOR, textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 9 },
+    headStyles: { fillColor: PRIMARY_COLOR, textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 8.5 },
     alternateRowStyles: { fillColor: [248, 250, 252] },
-    styles: { fontSize: 8.5, cellPadding: 3, font: 'helvetica' },
+    styles: { fontSize: 8, cellPadding: 2.5, font: 'helvetica' },
     columnStyles: {
-      0: { cellWidth: 10, halign: 'center' },
-      1: { cellWidth: 25, fontStyle: 'bold' },
-      2: { cellWidth: 65 },
-      3: { cellWidth: 30 },
-      4: { cellWidth: 25 },
-      5: { cellWidth: 22 },
-      6: { cellWidth: 22 },
-      7: { cellWidth: 18, halign: 'center' },
-      8: { cellWidth: 25, halign: 'right' },
-      9: { cellWidth: 28, halign: 'right' },
-      10: { cellWidth: 18, halign: 'center' }
+      0: { halign: 'center' },
+      1: { fontStyle: 'bold' },
+      7: { halign: 'center' },
+      8: { halign: 'right' },
+      9: { halign: 'right' },
+      10: { halign: 'center' }
     }
   });
 
@@ -485,16 +545,19 @@ export const generateBatchesReport = (batches: any[], courses: any[], filters: {
 
   // Branding Header
   doc.setFillColor(PRIMARY_COLOR[0], PRIMARY_COLOR[1], PRIMARY_COLOR[2]);
-  doc.rect(0, 0, pageWidth, 32, 'F');
+  doc.rect(0, 0, pageWidth, 34, 'F');
   
+  // Draw Logo
+  drawHeaderLogo(doc, 15, 4, 26, 26);
+
   doc.setTextColor(255, 255, 255);
   doc.setFontSize(20);
   doc.setFont('helvetica', 'bold');
-  doc.text('MPMA ERP SYSTEM', 15, 18);
+  doc.text('MPMA ERP SYSTEM', 46, 18);
 
   doc.setFontSize(11);
   doc.setFont('helvetica', 'normal');
-  doc.text('Course Management - Batches & Intake Report', 15, 26);
+  doc.text('Course Management - Batches & Intake Report', 46, 26);
 
   // Metadata
   doc.setFontSize(9);
@@ -504,9 +567,9 @@ export const generateBatchesReport = (batches: any[], courses: any[], filters: {
 
   // Filter Summary Box
   doc.setFillColor(248, 250, 252);
-  doc.rect(15, 36, pageWidth - 30, 14, 'F');
+  doc.rect(15, 38, pageWidth - 30, 14, 'F');
   doc.setDrawColor(226, 232, 240);
-  doc.rect(15, 36, pageWidth - 30, 14, 'S');
+  doc.rect(15, 38, pageWidth - 30, 14, 'S');
 
   doc.setTextColor(71, 85, 105);
   doc.setFontSize(9);
@@ -523,7 +586,7 @@ export const generateBatchesReport = (batches: any[], courses: any[], filters: {
     filters.search ? `Search: "${filters.search}"` : ''
   ].filter(Boolean).join('  |  ');
   
-  doc.text(`Applied Filters:  ${filterParts}`, 20, 45);
+  doc.text(`Applied Filters:  ${filterParts}`, 20, 47);
 
   const tableHead = [['#', 'Batch Code', 'Course Title', 'Schedule', 'Mode', 'Type', 'Location', 'Start Date', 'End Date', 'Enrolled', 'Max Cap', 'Status']];
   const tableBody = batches.map((b, index) => {
@@ -547,7 +610,8 @@ export const generateBatchesReport = (batches: any[], courses: any[], filters: {
   });
 
   autoTable(doc, {
-    startY: 54,
+    startY: 56,
+    margin: { left: 15, right: 15 },
     head: tableHead,
     body: tableBody,
     theme: 'striped',
@@ -555,18 +619,11 @@ export const generateBatchesReport = (batches: any[], courses: any[], filters: {
     alternateRowStyles: { fillColor: [248, 250, 252] },
     styles: { fontSize: 8, cellPadding: 2.5, font: 'helvetica' },
     columnStyles: {
-      0: { cellWidth: 8, halign: 'center' },
-      1: { cellWidth: 25, fontStyle: 'bold' },
-      2: { cellWidth: 60 },
-      3: { cellWidth: 20 },
-      4: { cellWidth: 20 },
-      5: { cellWidth: 20 },
-      6: { cellWidth: 30 },
-      7: { cellWidth: 22 },
-      8: { cellWidth: 22 },
-      9: { cellWidth: 16, halign: 'center' },
-      10: { cellWidth: 16, halign: 'center' },
-      11: { cellWidth: 18, halign: 'center' }
+      0: { halign: 'center' },
+      1: { fontStyle: 'bold' },
+      9: { halign: 'center' },
+      10: { halign: 'center' },
+      11: { halign: 'center' }
     }
   });
 
@@ -588,16 +645,19 @@ export const generateLecturersReport = (lecturers: any[], filters: { category?: 
 
   // Branding Header
   doc.setFillColor(PRIMARY_COLOR[0], PRIMARY_COLOR[1], PRIMARY_COLOR[2]);
-  doc.rect(0, 0, pageWidth, 32, 'F');
+  doc.rect(0, 0, pageWidth, 34, 'F');
+
+  // Draw Logo
+  drawHeaderLogo(doc, 15, 4, 26, 26);
   
   doc.setTextColor(255, 255, 255);
   doc.setFontSize(20);
   doc.setFont('helvetica', 'bold');
-  doc.text('MPMA ERP SYSTEM', 15, 18);
+  doc.text('MPMA ERP SYSTEM', 46, 18);
 
   doc.setFontSize(11);
   doc.setFont('helvetica', 'normal');
-  doc.text('Course Management - Lecturers Master Report', 15, 26);
+  doc.text('Course Management - Lecturers Master Report', 46, 26);
 
   // Metadata
   doc.setFontSize(9);
@@ -607,9 +667,9 @@ export const generateLecturersReport = (lecturers: any[], filters: { category?: 
 
   // Filter Summary Box
   doc.setFillColor(248, 250, 252);
-  doc.rect(15, 36, pageWidth - 30, 14, 'F');
+  doc.rect(15, 38, pageWidth - 30, 14, 'F');
   doc.setDrawColor(226, 232, 240);
-  doc.rect(15, 36, pageWidth - 30, 14, 'S');
+  doc.rect(15, 38, pageWidth - 30, 14, 'S');
 
   doc.setTextColor(71, 85, 105);
   doc.setFontSize(9);
@@ -621,7 +681,7 @@ export const generateLecturersReport = (lecturers: any[], filters: { category?: 
     filters.search ? `Search: "${filters.search}"` : ''
   ].filter(Boolean).join('  |  ');
   
-  doc.text(`Applied Filters:  ${filterParts}`, 20, 45);
+  doc.text(`Applied Filters:  ${filterParts}`, 20, 47);
 
   const tableHead = [['#', 'Full Name', 'Category', 'NIC / Passport', 'Mobile', 'Email', 'Department / Company', 'Designation', 'Status']];
   const tableBody = lecturers.map((l, index) => [
@@ -637,23 +697,18 @@ export const generateLecturersReport = (lecturers: any[], filters: { category?: 
   ]);
 
   autoTable(doc, {
-    startY: 54,
+    startY: 56,
+    margin: { left: 15, right: 15 },
     head: tableHead,
     body: tableBody,
     theme: 'striped',
-    headStyles: { fillColor: PRIMARY_COLOR, textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 9 },
+    headStyles: { fillColor: PRIMARY_COLOR, textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 8.5 },
     alternateRowStyles: { fillColor: [248, 250, 252] },
-    styles: { fontSize: 8.5, cellPadding: 3, font: 'helvetica' },
+    styles: { fontSize: 8, cellPadding: 2.5, font: 'helvetica' },
     columnStyles: {
-      0: { cellWidth: 10, halign: 'center' },
-      1: { cellWidth: 45, fontStyle: 'bold' },
-      2: { cellWidth: 25 },
-      3: { cellWidth: 28 },
-      4: { cellWidth: 28 },
-      5: { cellWidth: 48 },
-      6: { cellWidth: 40 },
-      7: { cellWidth: 30 },
-      8: { cellWidth: 20, halign: 'center' }
+      0: { halign: 'center' },
+      1: { fontStyle: 'bold' },
+      8: { halign: 'center' }
     }
   });
 
@@ -668,4 +723,3 @@ export const generateLecturersReport = (lecturers: any[], filters: { category?: 
 
   doc.save(`lecturers_report_${new Date().toISOString().slice(0, 10)}.pdf`);
 };
-
