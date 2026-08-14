@@ -1,7 +1,10 @@
 <div align="center">
 
+<img src="logo.png" alt="MPMA Logo" width="120" />
+
 # MPMA ERP System
 ### Mahapola Port & Maritime Academy — Enterprise Resource Planning
+
 
 [![React](https://img.shields.io/badge/React-19-61DAFB?style=flat&logo=react)](https://react.dev/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.9-3178C6?style=flat&logo=typescript)](https://www.typescriptlang.org/)
