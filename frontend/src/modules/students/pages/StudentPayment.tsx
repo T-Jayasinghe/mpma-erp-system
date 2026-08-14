@@ -22,8 +22,7 @@ import {
   Bell,
   Send,
   Mail,
-  MessageSquare,
-  Sparkles
+  MessageSquare
 } from "lucide-react";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -142,7 +141,7 @@ const CopyableBadge = ({ text, label }: { text: string; label?: string }) => {
 // Status Badge Component
 // ============================================================
 const StatusBadge = ({ status }: { status: PaymentStatus }) => {
-  const config: Record<PaymentStatus, { label: string; classes: string; icon: any }> = {
+  const config: Record<PaymentStatus, { label: string; classes: string; icon: React.ReactNode }> = {
     PENDING: {
       label: "Pending",
       classes: "bg-amber-50 text-amber-700 border-amber-200/80",
@@ -202,7 +201,7 @@ const SendReminderModal = ({
     ? `${payment.student.firstName} ${payment.student.lastName}`
     : `Student #${payment.student_id}`;
   const studentEmail = payment.student?.email || "student@mpma.edu.lk";
-  const studentPhone = (payment.student as any)?.phone || "0771234567";
+  const studentPhone = (payment.student as StudentInfo & { phone?: string })?.phone || "0771234567";
 
   const planInfo = getPaymentPlanInfo(payment.student?.payment_plan, payment.student?.installment_breakdown);
   const targetLabel = installmentLabel || (planInfo.scheduleItems.length > 0 ? planInfo.scheduleItems[0] : "Next Installment");
@@ -295,7 +294,7 @@ const SendReminderModal = ({
                 <button
                   key={channel.type}
                   type="button"
-                  onClick={() => setReminderType(channel.type as any)}
+                  onClick={() => setReminderType(channel.type as "Email Notification" | "SMS Alert" | "Official Notice")}
                   className={`p-3 rounded-xl border flex flex-col items-center gap-1.5 transition-all text-xs font-bold cursor-pointer ${
                     reminderType === channel.type
                       ? "bg-indigo-600 text-white border-indigo-600 shadow-md shadow-indigo-600/20"
@@ -759,10 +758,7 @@ export default function StudentPayment() {
     return p.payment_status === "PENDING" && planInfo.isInstallment;
   });
 
-  const totalPendingInstallmentBalance = installmentPendingPayments.reduce(
-    (sum, p) => sum + Number(p.full_amount_payable),
-    0
-  );
+
 
   const stats = {
     total: payments.length,
@@ -1068,11 +1064,7 @@ export default function StudentPayment() {
                       : `Student #${p.student_id}`;
                     const courseName = p.student?.course || "—";
                     const batchName = p.student?.batch || "—";
-                    const planText = p.student?.payment_plan === "INSTALLMENT_2"
-                      ? "2 Installments"
-                      : p.student?.payment_plan === "INSTALLMENT_3"
-                      ? "3 Installments"
-                      : "Full Payment";
+
 
                     return (
                       <tr

@@ -58,7 +58,7 @@ export default function NewClassroomBooking() {
     try {
       const data = await fetchApi('/classrooms');
       setClassrooms(data);
-    } catch (error) {
+    } catch (_error) {
       toast.error("Failed to load classrooms");
     }
   };

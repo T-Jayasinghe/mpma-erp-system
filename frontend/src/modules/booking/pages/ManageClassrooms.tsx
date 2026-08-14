@@ -44,7 +44,7 @@ export default function ManageClassrooms() {
       const data = await fetchApi('/classrooms');
       const sorted = [...data].sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' }));
       setClassrooms(sorted);
-    } catch (error) {
+    } catch (_error) {
       toast.error("Failed to load classrooms");
     }
   };
@@ -137,7 +137,7 @@ export default function ManageClassrooms() {
       await fetchApi(`/classrooms/${id}`, { method: 'DELETE' });
       setClassrooms(classrooms.filter(c => c.id !== id));
       toast.success("Classroom removed successfully!");
-    } catch (error: any) {
+    } catch (_error: any) {
       toast.error("Failed to delete classroom");
     }
   };

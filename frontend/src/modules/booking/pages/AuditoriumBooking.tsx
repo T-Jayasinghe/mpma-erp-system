@@ -41,7 +41,7 @@ export default function AuditoriumBooking() {
     try {
       const data = await fetchApi('/auditorium-bookings');
       setBookings(data);
-    } catch (error) {
+    } catch (_error) {
       toast.error("Failed to load auditorium bookings");
     }
   };
@@ -64,7 +64,7 @@ export default function AuditoriumBooking() {
       setBookings(bookings.map(b => b.id === id ? updated : b));
       if (status === "Approved") toast.success("Reservation approved!");
       if (status === "Rejected") toast.error("Reservation rejected!");
-    } catch (error) {
+    } catch (_error) {
       toast.error("Failed to update status");
     }
   };
@@ -81,7 +81,7 @@ export default function AuditoriumBooking() {
           await fetchApi(`/auditorium-bookings/${id}`, { method: 'DELETE' });
           setBookings(bookings.filter(b => b.id !== id));
           toast.success("Booking deleted successfully!");
-        } catch (error) {
+        } catch (_error) {
           toast.error("Failed to delete booking");
         }
       }
@@ -116,7 +116,7 @@ export default function AuditoriumBooking() {
           });
           loadBookings();
           toast.success("Booking denied successfully!");
-        } catch (error) {
+        } catch (_error) {
           toast.error("Failed to deny booking");
         }
       }

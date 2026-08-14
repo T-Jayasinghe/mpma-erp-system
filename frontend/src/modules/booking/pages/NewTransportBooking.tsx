@@ -32,7 +32,7 @@ export default function NewTransportBooking() {
       const data = await fetchApi('/vehicles');
       const sorted = [...data].sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' }));
       setVehicles(sorted);
-    } catch (error) {
+    } catch (_error) {
       toast.error("Failed to load vehicles");
     }
   };

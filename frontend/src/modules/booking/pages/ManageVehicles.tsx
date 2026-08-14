@@ -33,7 +33,7 @@ export default function ManageVehicles() {
       const data = await fetchApi('/vehicles');
       const sorted = [...data].sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' }));
       setVehicles(sorted);
-    } catch (error) {
+    } catch (_error) {
       toast.error("Failed to load vehicles from database");
     }
   };
@@ -108,7 +108,7 @@ export default function ManageVehicles() {
       await fetchApi(`/vehicles/${id}`, { method: 'DELETE' });
       setVehicles(vehicles.filter(v => v.id !== id));
       toast.success("Vehicle removed successfully!");
-    } catch (error: any) {
+    } catch (_error: any) {
       toast.error("Failed to delete vehicle");
     }
   };

@@ -45,7 +45,7 @@ export default function TransportBooking() {
     try {
       const data = await fetchApi('/transport-bookings');
       setBookings(data);
-    } catch (error) {
+    } catch (_error) {
       toast.error("Failed to load transport bookings");
     }
   };
@@ -85,7 +85,7 @@ export default function TransportBooking() {
       setBookings(bookings.map(b => b.id === id ? updated : b));
       if (status === "Approved") toast.success("Reservation approved!");
       if (status === "Rejected") toast.error("Reservation rejected!");
-    } catch (error) {
+    } catch (_error) {
       toast.error("Failed to update status");
     }
   };
@@ -102,7 +102,7 @@ export default function TransportBooking() {
           await fetchApi(`/transport-bookings/${id}`, { method: 'DELETE' });
           setBookings(bookings.filter(b => b.id !== id));
           toast.success("Booking deleted successfully!");
-        } catch (error) {
+        } catch (_error) {
           toast.error("Failed to delete booking");
         }
       }
@@ -137,7 +137,7 @@ export default function TransportBooking() {
           });
           loadBookings();
           toast.success("Request denied successfully!");
-        } catch (error) {
+        } catch (_error) {
           toast.error("Failed to deny request");
         }
       }

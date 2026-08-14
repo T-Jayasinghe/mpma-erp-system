@@ -58,7 +58,7 @@ export default function ManageBatches() {
     try {
       const data = await fetchApi('/batches');
       setBatches(data);
-    } catch (error) {
+    } catch (_error) {
       toast.error("Failed to load batches");
     }
   };
@@ -67,7 +67,7 @@ export default function ManageBatches() {
     try {
       const data = await fetchApi('/courses');
       setCourses(data.filter((c: any) => c.status === 'Active'));
-    } catch (error) {
+    } catch (_error) {
       toast.error("Failed to load courses");
     }
   };

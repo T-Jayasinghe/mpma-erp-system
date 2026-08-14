@@ -94,7 +94,7 @@ export default function EditClassroomBooking() {
           toast.error("Booking not found");
           navigate("/classroom-booking");
         }
-      } catch (err: any) {
+      } catch (_err: any) {
         toast.error("Failed to load booking");
         navigate("/classroom-booking");
       } finally {

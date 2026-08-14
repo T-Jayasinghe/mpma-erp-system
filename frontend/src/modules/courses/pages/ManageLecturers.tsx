@@ -88,7 +88,7 @@ export default function ManageLecturers() {
       if (Array.isArray(branchesData)) {
         setDbBranches(branchesData);
       }
-    } catch (err) {
+    } catch (_err) {
       console.error("Failed to load db bank branches", err);
     }
   };
@@ -170,7 +170,7 @@ export default function ManageLecturers() {
       ]);
       setLecturers(data);
       setCourses(coursesData || []);
-    } catch (error) {
+    } catch (_error) {
       toast.error("Failed to load lecturers list");
     }
   };
@@ -296,7 +296,7 @@ export default function ManageLecturers() {
       });
       setLecturers(lecturers.map(l => l.id === id ? updated : l));
       toast.info(`Lecturer status toggled to ${updated.status}`);
-    } catch (error: any) {
+    } catch (_error: any) {
       toast.error("Failed to update status");
     }
   };

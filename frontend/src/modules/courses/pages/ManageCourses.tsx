@@ -98,7 +98,7 @@ export default function ManageCourses() {
       );
 
       setAssignedLecturersByCourse(Object.fromEntries(assignmentResults));
-    } catch (error) {
+    } catch (_error) {
       toast.error("Failed to load courses and lecturers");
     }
   };
@@ -107,7 +107,7 @@ export default function ManageCourses() {
     try {
       const assigned = await fetchApi(`/courses/${courseId}/lecturers`);
       setAssignedLecturersByCourse((prev) => ({ ...prev, [courseId]: assigned }));
-    } catch (error) {
+    } catch (_error) {
       toast.error("Failed to load assigned lecturers");
     }
   };
@@ -218,7 +218,7 @@ export default function ManageCourses() {
       });
       setCourses(courses.map(c => c.id === id ? updated : c));
       toast.info(`Course code ${updated.courseCode} is now ${updated.status}`);
-    } catch (error: any) {
+    } catch (_error: any) {
       toast.error("Failed to update status");
     }
   };

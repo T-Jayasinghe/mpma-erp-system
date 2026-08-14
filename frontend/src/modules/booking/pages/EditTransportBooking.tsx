@@ -60,7 +60,7 @@ export default function EditTransportBooking() {
           toast.error("Booking not found");
           navigate("/transport-booking");
         }
-      } catch (err: any) {
+      } catch (_err: any) {
         toast.error("Failed to load booking");
         navigate("/transport-booking");
       } finally {
