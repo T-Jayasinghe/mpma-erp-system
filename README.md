@@ -446,12 +446,6 @@ Roles are set at login, stored in `localStorage` as `userRole`, and enforced on 
 
 ---
 
-## 📞 Support
-
-For issues, bugs, or feature requests, contact the **MPMA IT Division** or raise an issue in the project repository.
-
----
-
 <div align="center">
 
 **MPMA ERP System** · Mahapola Port & Maritime Academy · Sri Lanka
